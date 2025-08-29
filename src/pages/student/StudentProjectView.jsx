@@ -268,8 +268,7 @@ const StudentProjectView = () => {
                       </div>
                       <button
                         onClick={() => {
-                          // Navigate to project details or handle view action
-                          toast.info('Project view functionality to be implemented');
+                          navigate(`/student/project/${projectMasterId}/${project.project_main_id}`);
                         }}
                         className="ml-4 inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                       >

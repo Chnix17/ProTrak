@@ -207,7 +207,7 @@ const StudentWorkspace = () => {
                       </div>
                       <div className="ml-4 flex-shrink-0">
                         <button
-                          onClick={() => navigate(`/student/workspace/${item.project.project_master_id}`)}
+                          onClick={() => navigate(`/student/project/${item.project.project_master_id}`)}
                           className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                         >
                           <EyeIcon className="-ml-0.5 mr-1.5 h-4 w-4" aria-hidden="true" />

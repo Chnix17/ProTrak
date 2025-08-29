@@ -65,9 +65,9 @@ const Sidebar = () => {
     setProfileDropdownOpen(!profileDropdownOpen);
   };
 
-  const handleLogout = () => {
-    // Navigate to home page first
-    navigate('/');
+  const handleLogout = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
     
     // Clear all localStorage
     localStorage.clear();
@@ -75,8 +75,8 @@ const Sidebar = () => {
     // Clear all sessionStorage
     sessionStorage.clear();
     
-    // Force page reload to ensure navigation
-    window.location.href = '/';
+    // Force navigation to login page
+    window.location.href = '/login';
   };
 
   const handleProfileClick = () => {

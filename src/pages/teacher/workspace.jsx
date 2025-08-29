@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   PlusIcon, 
   PencilIcon, 
-  TrashIcon,
   EyeIcon,
   CalendarIcon,
   DocumentTextIcon
@@ -11,7 +10,7 @@ import { toast } from 'sonner';
 import { SecureStorage } from '../../utils/encryption';
 import axios from 'axios';
 import Sidebar from '../../components/sidebar';
-import { Create_Modal } from './lib/modal_create_project';
+import { Create_Modal as CreateModal } from './lib/modal_create_project';
 import { useNavigate } from 'react-router-dom';
 
 const Workspace = () => {
@@ -105,7 +104,7 @@ const Workspace = () => {
     fetchSchoolYears();
   }, [selectedSemester, baseUrl]);
 
-  const fetchProjects = async () => {
+  const fetchProjects = useCallback(async () => {
     if (!selectedSchoolYear) return;
     
     try {
@@ -115,7 +114,8 @@ const Workspace = () => {
         `${baseUrl}teacher.php`,
         { 
           operation: 'fetchProjectMasterBySchool_year_id',
-          schoolYearId: selectedSchoolYear
+          schoolYearId: selectedSchoolYear,
+          project_teacher_id: SecureStorage.getLocalItem('user_id')
         },
         { 
           headers: { 
@@ -134,28 +134,28 @@ const Workspace = () => {
     } finally {
       setIsLoading(prev => ({ ...prev, projects: false }));
     }
-  };
+  }, [selectedSchoolYear, baseUrl]);
 
   // Fetch projects when school year changes
   useEffect(() => {
     fetchProjects();
-  }, [selectedSchoolYear]);
+  }, [fetchProjects]);
 
 
 
-  const deleteProject = async (projectId) => {
-    if (window.confirm('Are you sure you want to delete this project?')) {
-      try {
-        const token = SecureStorage.getLocalItem('token');
-        await axios.delete(`${baseUrl}teacher.php`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        fetchProjects(selectedSemester);
-      } catch (error) {
-        console.error('Error deleting project:', error);
-      }
-    }
-  };
+  // const deleteProject = async (projectId) => {
+  //   if (window.confirm('Are you sure you want to delete this project?')) {
+  //     try {
+  //       const token = SecureStorage.getLocalItem('token');
+  //       await axios.delete(`${baseUrl}teacher.php`, {
+  //         headers: { Authorization: `Bearer ${token}` }
+  //       });
+  //       fetchProjects(selectedSemester);
+  //     } catch (error) {
+  //       console.error('Error deleting project:', error);
+  //     }
+  //   }
+  // };
 
   if (isLoading.semesters) {
     return (
@@ -312,7 +312,7 @@ const Workspace = () => {
           )}
 
           {/* Add Project Modal */}
-          <Create_Modal
+          <CreateModal
             show={showProjectForm}
             onHide={() => setShowProjectForm(false)}
             fetchProjects={fetchProjects}

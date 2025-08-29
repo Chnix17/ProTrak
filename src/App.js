@@ -15,6 +15,7 @@ import FacultyWorkspace from './pages/teacher/workspace';
 import Projects from './pages/teacher/projects';
 import StudentWorkspace from './pages/student/StudentWorkspace';
 import StudentProjectView from './pages/student/StudentProjectView';
+import ProjectDetailView from './pages/student/ProjectDetailView';
 import User from './pages/admin/Master Files/User';
 
 
@@ -76,6 +77,7 @@ const App = () => {
             '/teacher/projects',
             '/faculty/workspace/projects',
             '/student/workspace',
+            '/student/project',
         ];
 
         // Only show not found if we're not on the root path and the path is not in validPaths
@@ -107,7 +109,8 @@ const App = () => {
                             <Route path="/teacher/projects" element={<Projects/>}/>
                             {/* <Route path="/faculty/workspace/projects" element={<FacultyProjects/>}/> */}
                             <Route path="/student/workspace" element={<StudentWorkspace/>} />
-                            <Route path="/student/workspace/:projectMasterId" element={<StudentProjectView/>} />
+                            <Route path="/student/project/:projectMasterId" element={<StudentProjectView/>} />
+                            <Route path="/student/project/:projectMasterId/:projectId" element={<ProjectDetailView/>} />
                             <Route path="/admin/users" element={<User />} />
                         </Routes>
                     </Layout>
