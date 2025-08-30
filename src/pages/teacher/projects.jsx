@@ -8,7 +8,13 @@ import {
   ClockIcon,
   CheckCircleIcon,
   XCircleIcon,
-  PlusIcon
+  PlusIcon,
+  SpeakerWaveIcon,
+  BellIcon,
+  TrashIcon,
+  PencilIcon,
+  ChevronRightIcon,
+  ChevronLeftIcon
 } from '@heroicons/react/24/outline';
 import { toast } from 'sonner';
 import { SecureStorage } from '../../utils/encryption';
@@ -16,19 +22,22 @@ import axios from 'axios';
 import Sidebar from '../../components/sidebar';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Create_Phase_Modal } from './lib/modal_create_phase';
+import AnnouncementModal from './components/AnnouncementModal';
 
 const Projects = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [allProjects, setAllProjects] = useState([]);
-  const [studentProjects, setStudentProjects] = useState([]);
   const [projectMaster, setProjectMaster] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedStatus, setSelectedStatus] = useState('all');
   const [showPhaseModal, setShowPhaseModal] = useState(false);
   const [phases, setPhases] = useState([]);
   const [phasesLoading, setPhasesLoading] = useState(false);
-  const [showAllProjects, setShowAllProjects] = useState(false);
+  const [announcements, setAnnouncements] = useState([]);
+  const [announcementsLoading, setAnnouncementsLoading] = useState(false);
+  const [showAnnouncementModal, setShowAnnouncementModal] = useState(false);
+  const [editingAnnouncement, setEditingAnnouncement] = useState(null);
+  const [announcementSidebarCollapsed, setAnnouncementSidebarCollapsed] = useState(false);
 
   const baseUrl = SecureStorage.getLocalItem("url");
   
@@ -43,9 +52,9 @@ const Projects = () => {
     }
 
     fetchProjectMaster();
-    fetchStudentProjects();
     fetchPhases();
     fetchAllProjects();
+    fetchAnnouncements();
   }, [projectId]);
 
   const fetchProjectMaster = async () => {
@@ -71,37 +80,11 @@ const Projects = () => {
     } catch (error) {
       console.error('Error fetching project master:', error);
       toast.error('Failed to load project details');
-    }
-  };
-
-  const fetchStudentProjects = async () => {
-    try {
-      setIsLoading(true);
-      const token = SecureStorage.getLocalItem('token');
-      const response = await axios.post(
-        `${baseUrl}teacher.php`,
-        { 
-          operation: 'fetchStudentProjectsByProjectMasterId',
-          projectMasterId: projectId
-        },
-        { 
-          headers: { 
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          }
-        }
-      );
-      
-      if (response.data.status === 'success') {
-        setStudentProjects(response.data.data || []);
-      }
-    } catch (error) {
-      console.error('Error fetching student projects:', error);
-      toast.error('Failed to load student projects');
     } finally {
       setIsLoading(false);
     }
   };
+
 
   const fetchAllProjects = async () => {
     try {
@@ -110,7 +93,7 @@ const Projects = () => {
         `${baseUrl}teacher.php`,
         { 
           operation: 'fetchAllProjects',
-          master_id: "2"  // You can make this dynamic based on your needs
+          master_id: projectId  // You can make this dynamic based on your needs
         },
         { 
           headers: { 
@@ -126,6 +109,8 @@ const Projects = () => {
     } catch (error) {
       console.error('Error fetching all projects:', error);
       toast.error('Failed to load all projects');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -155,6 +140,191 @@ const Projects = () => {
       toast.error('Failed to load project phases');
     } finally {
       setPhasesLoading(false);
+    }
+  };
+
+  const fetchAnnouncements = async () => {
+    try {
+      setAnnouncementsLoading(true);
+      
+      // For now, using sample data until backend API is implemented
+      const sampleAnnouncements = [
+        {
+          id: 1,
+          announcement_title: 'Project Milestone Update',
+          announcement_content: 'We have successfully completed Phase 1 of the project. Great work everyone! Please prepare for Phase 2 which starts next week.',
+          created_at: '2024-01-15T10:30:00Z'
+        },
+        {
+          id: 2,
+          announcement_title: 'Weekly Team Meeting',
+          announcement_content: 'Reminder: Our weekly team meeting is scheduled for Friday at 2:00 PM. Please come prepared with your progress updates.',
+          created_at: '2024-01-14T09:15:00Z'
+        },
+        {
+          id: 3,
+          announcement_title: 'Documentation Guidelines',
+          announcement_content: 'Please ensure all code is properly documented according to our project standards. Refer to the style guide for details.',
+          created_at: '2024-01-13T14:45:00Z'
+        }
+      ];
+      
+      setTimeout(() => {
+        setAnnouncements(sampleAnnouncements);
+        setAnnouncementsLoading(false);
+      }, 500);
+      
+      // Uncomment when backend API is ready
+      /*
+      const token = SecureStorage.getLocalItem('token');
+      const response = await axios.post(
+        `${baseUrl}teacher.php`,
+        { 
+          operation: 'fetchAnnouncements',
+          project_master_id: projectId
+        },
+        { 
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          }
+        }
+      );
+      
+      if (response.data.status === 'success') {
+        setAnnouncements(response.data.data || []);
+      }
+      */
+    } catch (error) {
+      console.error('Error fetching announcements:', error);
+      toast.error('Failed to load announcements');
+      setAnnouncementsLoading(false);
+    }
+  };
+
+  const createAnnouncement = async (announcementData) => {
+    try {
+      // For now, simulate API call with sample data
+      const newAnnouncement = {
+        id: Date.now(),
+        announcement_title: announcementData.announcement_title,
+        announcement_content: announcementData.announcement_content,
+        created_at: new Date().toISOString()
+      };
+      
+      setAnnouncements(prev => [newAnnouncement, ...prev]);
+      toast.success('Announcement created successfully');
+      setShowAnnouncementModal(false);
+      
+
+      const token = SecureStorage.getLocalItem('token');
+      const userId = SecureStorage.getLocalItem('user_id');
+      const response = await axios.post(
+        `${baseUrl}teacher.php`,
+        { 
+          operation: 'insertAnnouncement',
+          project_master_id: projectId,
+          announcement_title: announcementData.announcement_title,
+          announcement_content: announcementData.announcement_content,
+          created_by: userId
+        },
+        { 
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          }
+        }
+      );
+      
+      if (response.data.status === 'success') {
+        toast.success('Announcement created successfully');
+        fetchAnnouncements();
+        setShowAnnouncementModal(false);
+      } else {
+        toast.error(response.data.message || 'Failed to create announcement');
+      }
+  
+    } catch (error) {
+      console.error('Error creating announcement:', error);
+      toast.error('Failed to create announcement');
+    }
+  };
+
+  const updateAnnouncement = async (announcementId, announcementData) => {
+    try {
+      // For now, simulate API call with sample data
+      setAnnouncements(prev => prev.map(ann => 
+        ann.id === announcementId 
+          ? { ...ann, ...announcementData }
+          : ann
+      ));
+      toast.success('Announcement updated successfully');
+      setShowAnnouncementModal(false);
+      setEditingAnnouncement(null);
+      
+      // Uncomment when backend API is ready
+      /*
+      const token = SecureStorage.getLocalItem('token');
+      const response = await axios.post(
+        `${baseUrl}teacher.php`,
+        { 
+          operation: 'updateAnnouncement',
+          announcement_id: announcementId,
+          ...announcementData
+        },
+        { 
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          }
+        }
+      );
+      
+      if (response.data.status === 'success') {
+        toast.success('Announcement updated successfully');
+        fetchAnnouncements();
+        setShowAnnouncementModal(false);
+        setEditingAnnouncement(null);
+      } else {
+        toast.error(response.data.message || 'Failed to update announcement');
+      }
+      */
+    } catch (error) {
+      console.error('Error updating announcement:', error);
+      toast.error('Failed to update announcement');
+    }
+  };
+
+  const deleteAnnouncement = async (announcementId) => {
+    if (!window.confirm('Are you sure you want to delete this announcement?')) {
+      return;
+    }
+
+    try {
+      const token = SecureStorage.getLocalItem('token');
+      const response = await axios.post(
+        `${baseUrl}teacher.php`,
+        { 
+          operation: 'deleteAnnouncement',
+          announcement_id: announcementId
+        },
+        { 
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          }
+        }
+      );
+      
+      if (response.data.status === 'success') {
+        toast.success('Announcement deleted successfully');
+        fetchAnnouncements();
+      } else {
+        toast.error(response.data.message || 'Failed to delete announcement');
+      }
+    } catch (error) {
+      console.error('Error deleting announcement:', error);
+      toast.error('Failed to delete announcement');
     }
   };
 
@@ -190,9 +360,9 @@ const Projects = () => {
     }
   };
 
-  const filteredProjects = selectedStatus === 'all' 
-    ? studentProjects 
-    : studentProjects.filter(project => project.status === selectedStatus);
+  // const filteredProjects = selectedStatus === 'all' 
+  //   ? studentProjects 
+  //   : studentProjects.filter(project => project.status === selectedStatus);
 
   const getPhaseStatus = (startDate, endDate) => {
     const today = new Date();
@@ -247,7 +417,7 @@ const Projects = () => {
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500 mx-auto"></div>
-            <p className="mt-2 text-gray-600">Loading student projects...</p>
+            <p className="mt-2 text-gray-600">Loading projects...</p>
           </div>
         </div>
       </div>
@@ -257,8 +427,10 @@ const Projects = () => {
   return (
     <div className="min-h-screen bg-gray-100 flex">
       <Sidebar />
-      <div className="flex-1 overflow-x-hidden">
-        <div className="p-6">
+      <div className="flex-1 overflow-x-hidden flex">
+        {/* Main Content */}
+        <div className={`transition-all duration-300 ${announcementSidebarCollapsed ? 'flex-1' : 'flex-1 lg:flex-none lg:w-2/3'} overflow-x-hidden`}>
+          <div className="p-6">
           {/* Header */}
           <div className="mb-6">
             <button
@@ -272,7 +444,7 @@ const Projects = () => {
             <div className="flex justify-between items-start">
               <div>
                 <h1 className="text-2xl font-bold text-gray-800">
-                  {projectMaster?.project_title || projectTitle || 'Student Projects'}
+                  {projectMaster?.project_title || projectTitle || 'All Projects'}
                 </h1>
                 {projectMaster && (
                   <div className="mt-2 text-sm text-gray-600">
@@ -285,28 +457,6 @@ const Projects = () => {
               </div>
               
               <div className="flex items-center space-x-4">
-                <button
-                  onClick={() => setShowAllProjects(!showAllProjects)}
-                  className={`px-4 py-2 border rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 ${
-                    showAllProjects ? 'bg-indigo-600 text-white' : 'bg-white text-gray-700'
-                  }`}
-                >
-                  {showAllProjects ? 'Show Student Projects' : 'Show All Projects'}
-                </button>
-                
-                {!showAllProjects && (
-                  <select
-                    value={selectedStatus}
-                    onChange={(e) => setSelectedStatus(e.target.value)}
-                    className="px-4 py-2 border rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                  >
-                    <option value="all">All Status</option>
-                    <option value="not_started">Not Started</option>
-                    <option value="in_progress">In Progress</option>
-                    <option value="completed">Completed</option>
-                  </select>
-                )}
-                
                 <button
                   onClick={() => setShowPhaseModal(true)}
                   className="flex items-center px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
@@ -406,7 +556,7 @@ const Projects = () => {
                 <DocumentTextIcon className="h-8 w-8 text-blue-500" />
                 <div className="ml-3">
                   <p className="text-sm font-medium text-gray-500">Total Projects</p>
-                  <p className="text-2xl font-semibold text-gray-900">{studentProjects.length}</p>
+                  <p className="text-2xl font-semibold text-gray-900">{allProjects.length}</p>
                 </div>
               </div>
             </div>
@@ -415,9 +565,9 @@ const Projects = () => {
               <div className="flex items-center">
                 <CheckCircleIcon className="h-8 w-8 text-green-500" />
                 <div className="ml-3">
-                  <p className="text-sm font-medium text-gray-500">Completed</p>
+                  <p className="text-sm font-medium text-gray-500">Active</p>
                   <p className="text-2xl font-semibold text-gray-900">
-                    {studentProjects.filter(p => p.status === 'completed').length}
+                    {allProjects.filter(p => p.project_is_active === 1).length}
                   </p>
                 </div>
               </div>
@@ -427,9 +577,9 @@ const Projects = () => {
               <div className="flex items-center">
                 <ClockIcon className="h-8 w-8 text-blue-500" />
                 <div className="ml-3">
-                  <p className="text-sm font-medium text-gray-500">In Progress</p>
+                  <p className="text-sm font-medium text-gray-500">Inactive</p>
                   <p className="text-2xl font-semibold text-gray-900">
-                    {studentProjects.filter(p => p.status === 'in_progress').length}
+                    {allProjects.filter(p => p.project_is_active === 0).length}
                   </p>
                 </div>
               </div>
@@ -439,204 +589,131 @@ const Projects = () => {
               <div className="flex items-center">
                 <XCircleIcon className="h-8 w-8 text-gray-500" />
                 <div className="ml-3">
-                  <p className="text-sm font-medium text-gray-500">Not Started</p>
+                  <p className="text-sm font-medium text-gray-500">Total Members</p>
                   <p className="text-2xl font-semibold text-gray-900">
-                    {studentProjects.filter(p => p.status === 'not_started').length}
-                  </p>
+                    {allProjects.reduce((sum, p) => sum + (p.member_count || 0), 0)}                  </p>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* All Projects Table or Student Projects List */}
-          {showAllProjects ? (
-            /* All Projects Table */
-            <div className="bg-white shadow rounded-lg overflow-hidden">
-              <div className="px-6 py-4 border-b border-gray-200">
-                <h3 className="text-lg font-medium text-gray-900">All Projects</h3>
-                <p className="text-sm text-gray-500 mt-1">{allProjects.length} projects found</p>
-              </div>
-              
-              {allProjects.length === 0 ? (
-                <div className="text-center py-12">
-                  <DocumentTextIcon className="mx-auto h-12 w-12 text-gray-400" />
-                  <h3 className="mt-2 text-sm font-medium text-gray-900">No projects found</h3>
-                  <p className="mt-1 text-sm text-gray-500">No projects have been created yet.</p>
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Project ID
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Project Title
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Description
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Creator
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Members
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Status
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Actions
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {allProjects.map((project) => (
-                        <tr key={project.project_main_id} className="hover:bg-gray-50">
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                            #{project.project_main_id}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm font-medium text-gray-900">
-                              {project.project_title}
-                            </div>
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className="text-sm text-gray-900 max-w-xs truncate" title={project.project_description}>
-                              {project.project_description || 'No description'}
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center">
-                              <div className="flex-shrink-0 h-8 w-8">
-                                <div className="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center">
-                                  <UserIcon className="h-4 w-4 text-indigo-600" />
-                                </div>
-                              </div>
-                              <div className="ml-3">
-                                <div className="text-sm font-medium text-gray-900">
-                                  {project.creator_name}
-                                </div>
-                                <div className="text-sm text-gray-500">
-                                  ID: {project.project_created_by_user_id}
-                                </div>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                              <UserIcon className="h-3 w-3 mr-1" />
-                              {project.member_count} members
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              project.project_is_active === 1 
-                                ? 'bg-green-100 text-green-800' 
-                                : 'bg-red-100 text-red-800'
-                            }`}>
-                              {project.project_is_active === 1 ? (
-                                <><CheckCircleIcon className="h-3 w-3 mr-1" />Active</>
-                              ) : (
-                                <><XCircleIcon className="h-3 w-3 mr-1" />Inactive</>
-                              )}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <button
-                              onClick={() => {
-                                navigate('/teacher/projects', {
-                                  state: {
-                                    projectId: project.project_main_id,
-                                    projectTitle: project.project_title
-                                  }
-                                });
-                              }}
-                              className="text-indigo-600 hover:text-indigo-900 mr-3"
-                            >
-                              <EyeIcon className="h-4 w-4" />
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
+          {/* All Projects Table */}
+          <div className="bg-white shadow rounded-lg overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h3 className="text-lg font-medium text-gray-900">All Projects</h3>
+              <p className="text-sm text-gray-500 mt-1">{allProjects.length} projects found</p>
             </div>
-          ) : (
-            /* Student Projects List */
-            filteredProjects.length === 0 ? (
-              <div className="text-center py-12 bg-white rounded-lg shadow">
+            
+            {allProjects.length === 0 ? (
+              <div className="text-center py-12">
                 <DocumentTextIcon className="mx-auto h-12 w-12 text-gray-400" />
-                <h3 className="mt-2 text-sm font-medium text-gray-900">No student projects found</h3>
-                <p className="mt-1 text-sm text-gray-500">
-                  {selectedStatus === 'all' 
-                    ? 'No students have been assigned to this project yet.'
-                    : `No projects with status "${selectedStatus}" found.`
-                  }
-                </p>
+                <h3 className="mt-2 text-sm font-medium text-gray-900">No projects found</h3>
+                <p className="mt-1 text-sm text-gray-500">No projects have been created yet.</p>
               </div>
             ) : (
-              <div className="bg-white shadow rounded-lg overflow-hidden">
-                <div className="px-6 py-4 border-b border-gray-200">
-                  <h3 className="text-lg font-medium text-gray-900">Student Projects</h3>
-                </div>
-                <div className="divide-y divide-gray-200">
-                  {filteredProjects.map((project, index) => (
-                    <div key={project.student_project_id || index} className="px-6 py-4 hover:bg-gray-50">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-4">
-                          <div className="flex-shrink-0">
-                            <div className="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center">
-                              <UserIcon className="h-6 w-6 text-indigo-600" />
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Project ID
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Project Title
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Description
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Creator
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Members
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Status
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {allProjects.map((project) => (
+                      <tr key={project.project_main_id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          #{project.project_main_id}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-medium text-gray-900">
+                            {project.project_title}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="text-sm text-gray-900 max-w-xs truncate" title={project.project_description}>
+                            {project.project_description || 'No description'}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center">
+                            <div className="flex-shrink-0 h-8 w-8">
+                              <div className="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center">
+                                <UserIcon className="h-4 w-4 text-indigo-600" />
+                              </div>
+                            </div>
+                            <div className="ml-3">
+                              <div className="text-sm font-medium text-gray-900">
+                                {project.creator_name}
+                              </div>
+                              <div className="text-sm text-gray-500">
+                                ID: {project.project_created_by_user_id}
+                              </div>
                             </div>
                           </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-gray-900 truncate">
-                              {project.student_name || `Student ${index + 1}`}
-                            </p>
-                            <p className="text-sm text-gray-500">
-                              {project.student_id || 'ID: N/A'}
-                            </p>
-                          </div>
-                        </div>
-                        
-                        <div className="flex items-center space-x-4">
-                          {getStatusBadge(project.status)}
-                          
-                          <div className="text-sm text-gray-500">
-                            <div className="flex items-center">
-                              <CalendarIcon className="h-4 w-4 mr-1" />
-                              {project.created_at ? new Date(project.created_at).toLocaleDateString() : 'N/A'}
-                            </div>
-                          </div>
-                          
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            <UserIcon className="h-3 w-3 mr-1" />
+                            {project.member_count} members
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            project.project_is_active === 1 
+                              ? 'bg-green-100 text-green-800' 
+                              : 'bg-red-100 text-red-800'
+                          }`}>
+                            {project.project_is_active === 1 ? (
+                              <><CheckCircleIcon className="h-3 w-3 mr-1" />Active</>
+                            ) : (
+                              <><XCircleIcon className="h-3 w-3 mr-1" />Inactive</>
+                            )}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                           <button
                             onClick={() => {
-                              // Handle view project details
-                              toast.info('View project details functionality coming soon');
+                              navigate(`/teacher/project-detail/${projectId}/${project.project_main_id}`, {
+                                state: {
+                                  projectMasterId: projectId,
+                                  projectId: project.project_main_id,
+                                  projectTitle: project.project_title
+                                }
+                              });
                             }}
-                            className="p-2 text-gray-400 hover:text-blue-600"
-                            title="View project details"
+                            className="text-indigo-600 hover:text-indigo-900 mr-3"
+                            title="View Project Details"
                           >
-                            <EyeIcon className="h-5 w-5" />
+                            <EyeIcon className="h-4 w-4" />
                           </button>
-                        </div>
-                      </div>
-                      
-                      {project.description && (
-                        <div className="mt-3 text-sm text-gray-600">
-                          <p>{project.description}</p>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
-            )
-          )}
+            )}
+          </div>
 
           {/* Add Phase Modal */}
           <Create_Phase_Modal
@@ -648,7 +725,116 @@ const Projects = () => {
               fetchPhases();
             }}
           />
+          </div>
         </div>
+
+        {/* Announcement Sidebar */}
+        <div className={`transition-all duration-300 bg-white border-l border-gray-200 ${announcementSidebarCollapsed ? 'w-12' : 'w-full lg:w-1/3'} flex flex-col`}>
+          {/* Sidebar Header */}
+          <div className="flex items-center justify-between p-4 border-b border-gray-200">
+            {!announcementSidebarCollapsed && (
+              <>
+                <div className="flex items-center space-x-2">
+                  <SpeakerWaveIcon className="h-5 w-5 text-indigo-600" />
+                  <h3 className="text-lg font-medium text-gray-900">Announcements</h3>
+                </div>
+                <button
+                  onClick={() => setShowAnnouncementModal(true)}
+                  className="flex items-center px-3 py-1.5 bg-indigo-600 text-white text-sm rounded-md hover:bg-indigo-700"
+                >
+                  <PlusIcon className="h-4 w-4 mr-1" />
+                  Add
+                </button>
+              </>
+            )}
+            <button
+              onClick={() => setAnnouncementSidebarCollapsed(!announcementSidebarCollapsed)}
+              className="p-1 rounded-md hover:bg-gray-100"
+            >
+              {announcementSidebarCollapsed ? (
+                <ChevronLeftIcon className="h-5 w-5 text-gray-500" />
+              ) : (
+                <ChevronRightIcon className="h-5 w-5 text-gray-500" />
+              )}
+            </button>
+          </div>
+
+          {/* Sidebar Content */}
+          {!announcementSidebarCollapsed && (
+            <div className="flex-1 overflow-y-auto">
+              {announcementsLoading ? (
+                <div className="p-4 text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-indigo-500 mx-auto"></div>
+                  <p className="mt-2 text-sm text-gray-600">Loading announcements...</p>
+                </div>
+              ) : announcements.length === 0 ? (
+                <div className="p-4 text-center">
+                  <BellIcon className="mx-auto h-12 w-12 text-gray-400" />
+                  <h3 className="mt-2 text-sm font-medium text-gray-900">No announcements</h3>
+                  <p className="mt-1 text-sm text-gray-500">Create your first announcement to keep everyone informed.</p>
+                </div>
+              ) : (
+                <div className="p-4 space-y-4">
+                  {announcements.map((announcement) => (
+                    <div key={announcement.id} className="bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-colors">
+                      <div className="flex items-start justify-between mb-2">
+                        <h4 className="text-sm font-medium text-gray-900 flex-1">
+                          {announcement.announcement_title}
+                        </h4>
+                        <div className="flex items-center space-x-1 ml-2">
+                          <button
+                            onClick={() => {
+                              setEditingAnnouncement(announcement);
+                              setShowAnnouncementModal(true);
+                            }}
+                            className="p-1 text-gray-400 hover:text-indigo-600"
+                            title="Edit announcement"
+                          >
+                            <PencilIcon className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => deleteAnnouncement(announcement.id)}
+                            className="p-1 text-gray-400 hover:text-red-600"
+                            title="Delete announcement"
+                          >
+                            <TrashIcon className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </div>
+                      
+                      <p className="text-sm text-gray-600 mb-3">
+                        {announcement.announcement_content}
+                      </p>
+                      
+                      <div className="flex items-center justify-end text-xs text-gray-500">
+                        <span>
+                          {new Date(announcement.created_at).toLocaleDateString()}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Announcement Modal */}
+        {showAnnouncementModal && (
+          <AnnouncementModal
+            show={showAnnouncementModal}
+            onHide={() => {
+              setShowAnnouncementModal(false);
+              setEditingAnnouncement(null);
+            }}
+            onSubmit={editingAnnouncement ? 
+              (data) => updateAnnouncement(editingAnnouncement.id, data) :
+              createAnnouncement
+            }
+            initialData={editingAnnouncement}
+            isEditing={!!editingAnnouncement}
+          />
+        )}
       </div>
     </div>
   );

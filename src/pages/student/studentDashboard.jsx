@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FiLayers, FiCheckCircle, FiClock, FiAlertCircle, FiBriefcase } from 'react-icons/fi';
+import { FiLayers, FiCheckCircle, FiClock, FiAlertCircle, FiBriefcase, FiTrendingUp, FiCalendar, FiUsers } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from '../../components/sidebar';
 import { SecureStorage } from '../../utils/encryption';
@@ -89,14 +89,26 @@ const StudentDashboard = () => {
   //   );
   // };
 
-  const StatCard = ({ icon: Icon, title, value, color }) => (
-    <div className="bg-white rounded-lg shadow p-4 flex items-center">
-      <div className={`p-2 rounded-full ${color} bg-opacity-10`}>
-        <Icon className={`w-5 h-5 ${color}`} />
-      </div>
-      <div className="ml-3">
-        <p className="text-gray-500 text-sm">{title}</p>
-        <p className="text-xl font-semibold">{value}</p>
+  const StatCard = ({ icon: Icon, title, value, color, bgColor, trend }) => (
+    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-all duration-200">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center">
+          <div className={`p-3 rounded-xl ${bgColor}`}>
+            <Icon className={`w-6 h-6 ${color}`} />
+          </div>
+          <div className="ml-4">
+            <p className="text-gray-600 text-sm font-medium">{title}</p>
+            <div className="flex items-center space-x-2">
+              <p className="text-2xl font-bold text-gray-900">{value}</p>
+              {trend && (
+                <span className="flex items-center text-xs font-medium text-primary">
+                  <FiTrendingUp className="w-3 h-3 mr-1" />
+                  {trend}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -107,7 +119,7 @@ const StudentDashboard = () => {
         <Sidebar />
         <main className="flex-1 p-6 lg:ml-64 flex items-center justify-center">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
             <p className="mt-2 text-gray-600">Loading your projects...</p>
           </div>
         </main>
@@ -118,105 +130,150 @@ const StudentDashboard = () => {
   return (
     <div className="min-h-screen bg-gray-50 flex">
       <Sidebar />
-      <main className="flex-1 p-6 lg:ml-64">
-        <div className="max-w-6xl mx-auto">
+      <div className="flex-1 overflow-x-hidden">
+        <div className="p-6">
+          {/* Header Section */}
           <div className="mb-8">
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Student Dashboard</h1>
-            <p className="text-gray-600">Welcome back! Here's your project overview.</p>
+            <div className="bg-gradient-to-r from-primary to-primary-medium rounded-2xl p-8 text-white">
+              <h1 className="text-3xl font-bold mb-2">Welcome back, {SecureStorage.getLocalItem('firstname') || 'Student'}!</h1>
+              <p className="text-primary-subtle opacity-90">Track your progress and manage your projects efficiently.</p>
+            </div>
           </div>
 
           {/* Stats Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
             <StatCard 
               icon={FiLayers}
               title="Total Projects"
               value={stats.totalProjects}
-              color="text-indigo-500"
+              color="text-primary"
+              bgColor="bg-primary-subtle"
+              trend="+12%"
             />
             <StatCard 
               icon={FiClock}
               title="Active Projects"
               value={stats.activeProjects}
-              color="text-blue-500"
+              color="text-blue-600"
+              bgColor="bg-blue-50"
             />
             <StatCard 
               icon={FiCheckCircle}
               title="Completed"
               value={stats.completedProjects}
-              color="text-green-500"
+              color="text-primary-medium"
+              bgColor="bg-primary-light"
             />
-            <StatCard 
-              icon={FiAlertCircle}
-              title="Pending Tasks"
-              value={stats.pendingTasks}
-              color="text-amber-500"
-            />
+          </div>
+
+          {/* Quick Actions */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
             <div 
               onClick={() => navigate('/student/workspace')}
-              className="bg-white rounded-lg shadow p-4 flex items-center cursor-pointer hover:bg-gray-50 transition-colors"
+              className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 cursor-pointer hover:shadow-md transition-all duration-200 group"
             >
-              <div className="p-2 rounded-full bg-indigo-100">
-                <FiBriefcase className="w-5 h-5 text-indigo-600" />
+              <div className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <div className="p-3 rounded-xl bg-primary-subtle group-hover:bg-primary-light transition-colors">
+                    <FiBriefcase className="w-6 h-6 text-primary" />
+                  </div>
+                  <div className="ml-4">
+                    <h3 className="text-lg font-semibold text-gray-900">My Workspaces</h3>
+                    <p className="text-gray-600 text-sm">Access all your project workspaces</p>
+                  </div>
+                </div>
+                <div className="text-primary opacity-0 group-hover:opacity-100 transition-opacity">
+                  →
+                </div>
               </div>
-              <div className="ml-3">
-                <p className="text-gray-500 text-sm">My Workspaces</p>
-                <p className="text-lg font-semibold text-indigo-600">View All</p>
+            </div>
+            
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+              <div className="flex items-center">
+                <div className="p-3 rounded-xl bg-blue-50">
+                  <FiCalendar className="w-6 h-6 text-blue-600" />
+                </div>
+                <div className="ml-4">
+                  <h3 className="text-lg font-semibold text-gray-900">Upcoming Deadlines</h3>
+                  <p className="text-gray-600 text-sm">Stay on track with your submissions</p>
+                </div>
               </div>
             </div>
           </div>
 
           {/* Active Projects Section */}
-          <div className="bg-white rounded-lg shadow overflow-hidden">
-            <div className="p-6 border-b border-gray-200">
-              <h2 className="text-lg font-medium text-gray-900">My Active Projects</h2>
-              <p className="mt-1 text-sm text-gray-500">Projects you're currently working on</p>
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="p-6 border-b border-gray-100">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-semibold text-gray-900">My Active Projects</h2>
+                  <p className="mt-1 text-sm text-gray-600">Projects you're currently working on</p>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <FiUsers className="w-5 h-5 text-gray-400" />
+                  <span className="text-sm text-gray-500">{activeProjects.length} projects</span>
+                </div>
+              </div>
             </div>
             
             {activeProjects.length > 0 ? (
-              <ul className="divide-y divide-gray-200">
-                {activeProjects.map((project) => (
-                  <li key={project.id} className="p-6 hover:bg-gray-50">
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1 min-w-0">
-                        <h3 className="text-lg font-medium text-gray-900 truncate">
-                          {project.project_name}
-                        </h3>
-                        <div className="mt-2 flex flex-col sm:flex-row sm:flex-wrap sm:mt-0 sm:space-x-6">
-                          <div className="mt-2 flex items-center text-sm text-gray-500">
-                            <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
-                              {project.subject_name}
-                            </span>
-                          </div>
-                          <div className="mt-2 flex items-center text-sm text-gray-500">
-                            <span>Teacher: {project.teacher_name}</span>
-                          </div>
-                          <div className="mt-2 flex items-center text-sm text-gray-500">
-                            <span>Semester: {project.semester_name}</span>
+              <div className="p-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {activeProjects.map((project) => (
+                    <div key={project.id} className="bg-gray-50 rounded-xl p-6 hover:bg-gray-100 transition-colors group">
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex-1">
+                          <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                            {project.project_name}
+                          </h3>
+                          <div className="space-y-2">
+                            <div className="flex items-center">
+                              <span className="px-3 py-1 text-xs font-medium rounded-full bg-primary-subtle text-primary">
+                                {project.subject_name}
+                              </span>
+                            </div>
+                            <div className="text-sm text-gray-600">
+                              <span className="font-medium">Teacher:</span> {project.teacher_name}
+                            </div>
+                            <div className="text-sm text-gray-600">
+                              <span className="font-medium">Semester:</span> {project.semester_name}
+                            </div>
                           </div>
                         </div>
                       </div>
-                      <div className="ml-4 flex-shrink-0">
+                      <div className="flex items-center justify-between">
+                        <div className="text-xs text-gray-500">
+                          Last updated: 2 days ago
+                        </div>
                         <button
                           onClick={() => navigate(`/student/workspace/${project.id}`)}
-                          className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                          className="inline-flex items-center px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary-medium focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-colors"
                         >
-                          View Project
+                          Open Project
                         </button>
                       </div>
                     </div>
-                  </li>
-                ))}
-              </ul>
+                  ))}
+                </div>
+              </div>
             ) : (
               <div className="p-12 text-center">
-                <FiLayers className="mx-auto h-12 w-12 text-gray-400" />
-                <h3 className="mt-2 text-sm font-medium text-gray-900">No active projects</h3>
-                <p className="mt-1 text-sm text-gray-500">You don't have any active projects at the moment.</p>
+                <div className="mx-auto w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                  <FiLayers className="h-12 w-12 text-gray-400" />
+                </div>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No active projects</h3>
+                <p className="text-gray-500 mb-6">You don't have any active projects at the moment.</p>
+                <button 
+                  onClick={() => navigate('/student/workspace')}
+                  className="inline-flex items-center px-6 py-3 bg-primary text-white font-medium rounded-lg hover:bg-primary-medium transition-colors"
+                >
+                  Browse Available Projects
+                </button>
               </div>
             )}
           </div>
         </div>
-      </main>
+      </div>
     </div>
   );
 };

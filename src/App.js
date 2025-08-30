@@ -16,6 +16,7 @@ import Projects from './pages/teacher/projects';
 import StudentWorkspace from './pages/student/StudentWorkspace';
 import StudentProjectView from './pages/student/StudentProjectView';
 import ProjectDetailView from './pages/student/ProjectDetailView';
+import TeacherProjectDetailView from './pages/teacher/TeacherProjectDetailView';
 import User from './pages/admin/Master Files/User';
 
 
@@ -75,6 +76,7 @@ const App = () => {
             '/student/dashboard',
             '/teacher/workspace',
             '/teacher/projects',
+            '/teacher/project-detail',
             '/faculty/workspace/projects',
             '/student/workspace',
             '/student/project',
@@ -107,6 +109,7 @@ const App = () => {
                             <Route path="/teacher/dashboard" element={<TeacherDashboard/>}/>
                             <Route path="/teacher/workspace" element={<FacultyWorkspace/>}/>
                             <Route path="/teacher/projects" element={<Projects/>}/>
+                            <Route path="/teacher/project-detail/:projectMasterId/:projectId" element={<TeacherProjectDetailView/>}/>
                             {/* <Route path="/faculty/workspace/projects" element={<FacultyProjects/>}/> */}
                             <Route path="/student/workspace" element={<StudentWorkspace/>} />
                             <Route path="/student/project/:projectMasterId" element={<StudentProjectView/>} />

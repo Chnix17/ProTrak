@@ -5,7 +5,6 @@ import {
   FolderIcon, 
   UsersIcon, 
   CalendarIcon,
-  ChevronDownIcon,
   ChevronRightIcon,
   ChevronLeftIcon,
   Bars3Icon,
@@ -19,35 +18,26 @@ import { useSidebar } from '../contexts/SidebarContext';
 const Sidebar = () => {
   const { isOpen, isCollapsed, isMobile, toggleSidebar, closeSidebar } = useSidebar();
   const [masterFilesOpen, setMasterFilesOpen] = useState(false);
-  const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const [userRole, setUserRole] = useState('');
   const location = useLocation();
   const navigate = useNavigate();
 
   useEffect(() => {
     // Get user role from SecureStorage
+    console.log('Sidebar useEffect - checking for user role');
     const userLevelName =
       SecureStorage.getLocalItem('user_level_name') ||
       SecureStorage.getLocalItem('user_level');
+    console.log('Retrieved user_level_name:', userLevelName);
     if (userLevelName) {
+      console.log('Setting userRole to:', userLevelName);
       setUserRole(userLevelName);
+    } else {
+      console.log('No user role found in storage');
+      setUserRole('');
     }
   }, []);
 
-  // Handle clicks outside dropdown to close it
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      const profileSection = event.target.closest('.profile-section');
-      if (!profileSection && profileDropdownOpen) {
-        setProfileDropdownOpen(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [profileDropdownOpen]);
 
   // Normalize role and determine access groups
   const normalizedRole = (userRole || '').toLowerCase();
@@ -61,13 +51,15 @@ const Sidebar = () => {
     setMasterFilesOpen(!masterFilesOpen);
   };
 
-  const toggleProfileDropdown = () => {
-    setProfileDropdownOpen(!profileDropdownOpen);
-  };
 
   const handleLogout = (e) => {
     e.preventDefault();
     e.stopPropagation();
+    
+    console.log('Logout initiated');
+    console.log('Current userRole before logout:', userRole);
+    console.log('localStorage before clear:', { ...localStorage });
+    console.log('sessionStorage before clear:', { ...sessionStorage });
     
     // Clear all localStorage
     localStorage.clear();
@@ -75,14 +67,20 @@ const Sidebar = () => {
     // Clear all sessionStorage
     sessionStorage.clear();
     
-    // Force navigation to login page
-    window.location.href = '/login';
+    // Reset user role state
+    setUserRole('');
+    
+    // Close any open dropdowns
+    setMasterFilesOpen(false);
+    
+    console.log('Storage cleared, redirecting to login...');
+    
+    // Force navigation to login page with a slight delay to ensure state updates
+    setTimeout(() => {
+      window.location.href = '/login';
+    }, 100);
   };
 
-  const handleProfileClick = () => {
-    // For now, just close the dropdown when profile is clicked
-    setProfileDropdownOpen(false);
-  };
 
   const isActiveRoute = (path) => {
     return location.pathname === path;
@@ -158,7 +156,7 @@ const Sidebar = () => {
       } transition-transform duration-300 ease-in-out`}>
         <button
           onClick={toggleSidebar}
-          className="p-3 rounded-xl bg-white shadow-lg border border-gray-200 text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-all duration-200"
+          className="p-3 rounded-xl bg-white shadow-lg border border-gray-200 text-gray-600 hover:text-primary hover:bg-primary-subtle focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-all duration-200"
         >
           {isOpen ? (
             <XMarkIcon className="h-5 w-5" />
@@ -182,14 +180,14 @@ const Sidebar = () => {
       } ${isMobile ? 'lg:translate-x-0' : ''}`}>
         
         {/* Sidebar header */}
-        <div className="flex items-center justify-between h-16 px-4 bg-gradient-to-r from-indigo-600 to-indigo-700 shadow-lg">
+        <div className="flex items-center justify-between h-16 px-4 bg-gradient-to-r from-primary-dark to-primary shadow-lg">
           <div className={`flex items-center transition-all duration-300 ${isCollapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'}`}>
             <div className="flex items-center space-x-2">
               <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
                 <span className="text-white font-bold text-sm">PT</span>
               </div>
               <h1 className="text-lg font-bold text-white truncate">
-                {isAdmin ? 'ProTrack Admin' : isFaculty ? 'ProTrack Faculty' : 'ProTrack Student'}
+                {isAdmin ? 'ProTrack' : isFaculty ? 'ProTrack' : 'ProTrack'}
               </h1>
             </div>
           </div>
@@ -216,21 +214,21 @@ const Sidebar = () => {
                 to={item.href}
                 className={`group flex items-center px-3 py-3 text-sm font-medium rounded-xl transition-all duration-200 relative ${
                   item.current
-                    ? 'bg-indigo-50 text-indigo-700 shadow-sm border border-indigo-100'
-                    : 'text-gray-700 hover:text-indigo-700 hover:bg-gray-50'
+                    ? 'bg-primary-subtle text-primary shadow-sm border border-primary-light'
+                    : 'text-gray-700 hover:text-primary hover:bg-gray-50'
                 }`}
                 title={isCollapsed ? item.name : ''}
               >
                 <item.icon
                   className={`h-5 w-5 flex-shrink-0 ${
                     item.current 
-                      ? 'text-indigo-500' 
-                      : 'text-gray-400 group-hover:text-indigo-500'
+                      ? 'text-primary' 
+                      : 'text-gray-400 group-hover:text-primary'
                   } ${!isCollapsed ? 'mr-3' : 'mx-auto'}`}
                 />
                 {!isCollapsed && <span className="truncate">{item.name}</span>}
                 {item.current && (
-                  <div className="absolute left-0 top-1/2 transform -translate-y-1/2 w-1 h-6 bg-indigo-500 rounded-r-full"></div>
+                  <div className="absolute left-0 top-1/2 transform -translate-y-1/2 w-1 h-6 bg-primary rounded-r-full"></div>
                 )}
               </Link>
             ))}
@@ -242,8 +240,8 @@ const Sidebar = () => {
                   onClick={toggleMasterFiles}
                   className={`group w-full flex items-center px-3 py-3 text-sm font-medium rounded-xl transition-all duration-200 relative ${
                     masterFileItems.some(item => item.current)
-                      ? 'bg-indigo-50 text-indigo-700 shadow-sm border border-indigo-100'
-                      : 'text-gray-700 hover:text-indigo-700 hover:bg-gray-50'
+                      ? 'bg-primary-subtle text-primary shadow-sm border border-primary-light'
+                      : 'text-gray-700 hover:text-primary hover:bg-gray-50'
                   }`}
                   title={isCollapsed ? 'Master Files' : ''}
                 >
@@ -251,8 +249,8 @@ const Sidebar = () => {
                     <FolderIcon
                       className={`h-5 w-5 flex-shrink-0 ${
                         masterFileItems.some(item => item.current)
-                          ? 'text-indigo-500'
-                          : 'text-gray-400 group-hover:text-indigo-500'
+                          ? 'text-primary'
+                          : 'text-gray-400 group-hover:text-primary'
                       } ${!isCollapsed ? 'mr-3' : 'mx-auto'}`}
                     />
                     {!isCollapsed && (
@@ -267,7 +265,7 @@ const Sidebar = () => {
                     )}
                   </div>
                   {masterFileItems.some(item => item.current) && (
-                    <div className="absolute left-0 top-1/2 transform -translate-y-1/2 w-1 h-6 bg-indigo-500 rounded-r-full"></div>
+                    <div className="absolute left-0 top-1/2 transform -translate-y-1/2 w-1 h-6 bg-primary rounded-r-full"></div>
                   )}
                 </button>
 
@@ -282,20 +280,20 @@ const Sidebar = () => {
                         to={item.href}
                         className={`group flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 relative ${
                           item.current
-                            ? 'bg-indigo-50 text-indigo-700 shadow-sm'
-                            : 'text-gray-600 hover:text-indigo-700 hover:bg-gray-50'
+                            ? 'bg-primary-subtle text-primary shadow-sm'
+                            : 'text-gray-600 hover:text-primary hover:bg-gray-50'
                         }`}
                       >
                         <item.icon
                           className={`h-4 w-4 flex-shrink-0 mr-3 ${
                             item.current 
-                              ? 'text-indigo-500' 
-                              : 'text-gray-400 group-hover:text-indigo-500'
+                              ? 'text-primary' 
+                              : 'text-gray-400 group-hover:text-primary'
                           }`}
                         />
                         <span className="truncate">{item.name}</span>
                         {item.current && (
-                          <div className="absolute left-0 top-1/2 transform -translate-y-1/2 w-1 h-4 bg-indigo-500 rounded-r-full"></div>
+                          <div className="absolute left-0 top-1/2 transform -translate-y-1/2 w-1 h-4 bg-primary rounded-r-full"></div>
                         )}
                       </Link>
                     ))}
@@ -309,52 +307,40 @@ const Sidebar = () => {
 
         {/* User profile section */}
         <div className="absolute bottom-0 w-full p-4 border-t border-gray-100 bg-gray-50/50">
-          <div 
-            className="profile-section flex items-center cursor-pointer hover:bg-white rounded-xl p-3 transition-all duration-200 shadow-sm border border-transparent hover:border-gray-200"
-            onClick={toggleProfileDropdown}
-          >
+          {/* User Info Display */}
+          <div className="flex items-center p-3 bg-white rounded-xl shadow-sm border border-gray-200 mb-3">
             <div className="flex-shrink-0">
-              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-600 flex items-center justify-center shadow-sm">
-                <span className="text-sm font-bold text-white">
-                  {userRole.charAt(0).toUpperCase()}
-                </span>
+              {/* Default Avatar */}
+              <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary to-primary-dark flex items-center justify-center shadow-sm">
+                <UserIcon className="h-6 w-6 text-white" />
               </div>
             </div>
             {!isCollapsed && (
-              <>
-                <div className="ml-3 flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-gray-800 truncate">
-                    {isAdmin ? 'Admin User' : isFaculty ? 'Faculty User' : 'Student User'}
-                  </p>
-                  <p className="text-xs text-gray-500 truncate">{userRole}</p>
-                </div>
-                <ChevronDownIcon 
-                  className={`h-4 w-4 text-gray-400 transition-transform duration-200 flex-shrink-0 ${
-                    profileDropdownOpen ? 'rotate-180' : ''
-                  }`}
-                />
-              </>
+              <div className="ml-3 flex-1 min-w-0">
+                <p className="text-sm font-semibold text-gray-800 truncate">
+                  {(() => {
+                    const firstname = SecureStorage.getLocalItem('firstname') || '';
+                    const middlename = SecureStorage.getLocalItem('middlename') || '';
+                    const lastname = SecureStorage.getLocalItem('lastname') || '';
+                    const fullName = `${firstname} ${middlename} ${lastname}`.trim().replace(/\s+/g, ' ');
+                    return fullName || (isAdmin ? 'Admin User' : isFaculty ? 'Faculty User' : 'Student User');
+                  })()}
+                </p>
+                <p className="text-xs text-gray-500 truncate">{userRole}</p>
+              </div>
             )}
           </div>
-
-          {/* Profile Dropdown Menu */}
-          {profileDropdownOpen && !isCollapsed && (
-            <div className="mt-2 bg-white border border-gray-200 rounded-xl shadow-xl py-2 z-50 backdrop-blur-sm">
-              <button
-                onClick={handleProfileClick}
-                className="w-full flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 transition-all duration-200 rounded-lg mx-1"
-              >
-                <UserIcon className="h-4 w-4 mr-3 text-gray-400" />
-                Profile
-              </button>
-              <button
-                onClick={handleLogout}
-                className="w-full flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-red-50 hover:text-red-600 transition-all duration-200 rounded-lg mx-1"
-              >
-                <ArrowRightOnRectangleIcon className="h-4 w-4 mr-3 text-gray-400" />
-                Logout
-              </button>
-            </div>
+          
+          {/* Logout Button */}
+          {!isCollapsed && (
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center justify-center px-3 py-2 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-all duration-200 border border-red-200"
+              title="Logout"
+            >
+              <ArrowRightOnRectangleIcon className="h-4 w-4 mr-2" />
+              Logout
+            </button>
           )}
         </div>
       </div>
