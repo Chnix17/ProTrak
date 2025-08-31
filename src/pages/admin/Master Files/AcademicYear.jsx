@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
-import { PlusIcon, PencilIcon, TrashIcon, CalendarIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { toast } from 'sonner';
+import { Spin, Table, Space, Button, Card } from 'antd';
 import Sidebar from '../../../components/sidebar';
-import { Create_Modal } from './lib/academic/modal_create';
-import Update_Modal from './lib/academic/modal_update';
+import { Create_Modal as CREATE_MODAL } from './lib/academic/modal_create';
+import { Update_Modal as UPDATE_MODAL } from './lib/academic/modal_update';
 import { SecureStorage } from '../../../utils/encryption';
 
 const AcademicYear = () => {
@@ -59,14 +60,14 @@ const AcademicYear = () => {
     fetchSemesters();
   }, [fetchAcademicYears, fetchSemesters]);
 
-  const showCreateModal = () => {
-    setIsCreateModalVisible(true);
-  };
+  // const showCreateModal = () => {
+  //   setIsCreateModalVisible(true);
+  // };
 
-  const handleEdit = (year) => {
-    setEditingYear(year);
-    setIsUpdateModalVisible(true);
-  };
+  // const handleEdit = (year) => {
+  //   setEditingYear(year);
+  //   setIsUpdateModalVisible(true);
+  // };
 
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this academic year?')) {
@@ -106,104 +107,97 @@ const AcademicYear = () => {
   return (
     <div className="flex h-screen bg-gray-100">
       <Sidebar />
-      <div className="flex-1 overflow-auto">
-        <div className="p-6">
-          {/* Header */}
-          <div className="mb-6">
-            <div className="flex justify-between items-center">
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">Academic Year Management</h1>
-                <p className="text-gray-600">Manage academic years and semesters</p>
-              </div>
-              <button
-                onClick={showCreateModal}
-                className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 flex items-center gap-2 transition-colors"
-              >
-                <PlusIcon className="h-5 w-5" />
-                Add Academic Year
-              </button>
-            </div>
+      <div className="flex-1 p-6 overflow-auto">
+        <Card className="mb-6">
+          <div className="flex justify-between items-center">
+            <h1 className="text-2xl font-semibold text-gray-800">Academic Year Management</h1>
+            <Button 
+              type="primary"
+              icon={<PlusIcon className="w-4 h-4 mr-1" />}
+              onClick={() => setIsCreateModalVisible(true)}
+              className="flex items-center"
+            >
+              Add Academic Year
+            </Button>
           </div>
+        </Card>
+        
+        <Spin spinning={loading}>
+          <Card>
+            <Table 
+              dataSource={academicYears}
+              rowKey="school_year_id"
+              pagination={{ pageSize: 10 }}
+              columns={[
+                {
+                  title: 'Academic Year',
+                  dataIndex: 'school_year_name',
+                  key: 'school_year_name',
+                },
+                {
+                  title: 'Semester',
+                  dataIndex: 'school_year_semester_id',
+                  key: 'school_year_semester_id',
+                  render: (semesterId) => getSemesterName(semesterId),
+                },
+                {
+                  title: 'Start Date',
+                  dataIndex: 'school_year_start_date',
+                  key: 'school_year_start_date',
+                  render: (dateString) => formatDate(dateString),
+                },
+                {
+                  title: 'End Date',
+                  dataIndex: 'school_year_end_date',
+                  key: 'school_year_end_date',
+                  render: (dateString) => formatDate(dateString),
+                },
+                {
+                  title: 'Actions',
+                  key: 'actions',
+                  render: (_, record) => (
+                    <Space size="middle">
+                      <Button
+                        type="text"
+                        icon={<PencilIcon className="w-4 h-4" />}
+                        onClick={() => {
+                          setEditingYear(record);
+                          setIsUpdateModalVisible(true);
+                        }}
+                      />
+                      <Button
+                        type="text"
+                        danger
+                        icon={<TrashIcon className="w-4 h-4" />}
+                        onClick={() => handleDelete(record.school_year_id)}
+                      />
+                    </Space>
+                  ),
+                },
+              ]}
+            />
+          </Card>
+        </Spin>
 
-          {/* Academic Years Table */}
-          <div className="bg-white rounded-lg shadow overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Academic Year
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Semester
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Start Date
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      End Date
-                    </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {academicYears.map((year) => (
-                    <tr key={year.school_year_id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {year.school_year_name}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {getSemesterName(year.school_year_semester_id)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {formatDate(year.school_year_start_date)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {formatDate(year.school_year_end_date)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <button
-                          onClick={() => handleEdit(year)}
-                          className="text-indigo-600 hover:text-indigo-900 mr-4"
-                        >
-                          <PencilIcon className="h-5 w-5" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(year.school_year_id)}
-                          className="text-red-600 hover:text-red-900"
-                        >
-                          <TrashIcon className="h-5 w-5" />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+        {/* Create Modal */}
+        <CREATE_MODAL
+          show={isCreateModalVisible}
+          onHide={() => setIsCreateModalVisible(false)}
+          fetchAcademicYears={fetchAcademicYears}
+          semesters={semesters}
+        />
 
-          {/* Create Modal */}
-          <Create_Modal
-            show={isCreateModalVisible}
-            onHide={() => setIsCreateModalVisible(false)}
-            fetchAcademicYears={fetchAcademicYears}
-            semesters={semesters}
-          />
-
-          {/* Update Modal */}
-          <Update_Modal
-            show={isUpdateModalVisible}
-            onHide={() => {
-              setIsUpdateModalVisible(false);
-              setEditingYear(null);
-            }}
-            fetchAcademicYears={fetchAcademicYears}
-            academicYear={editingYear}
-            semesters={semesters}
-          />
-        </div>
+        {/* Update Modal */}
+        <UPDATE_MODAL
+          show={isUpdateModalVisible}
+          onHide={() => {
+            setIsUpdateModalVisible(false);
+            setEditingYear(null);
+          }}
+          fetchAcademicYears={fetchAcademicYears}
+          academicYear={editingYear}
+          semesters={semesters}
+        />
       </div>
     </div>
   );

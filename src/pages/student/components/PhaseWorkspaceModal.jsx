@@ -14,8 +14,7 @@ import {
   Empty, 
   Typography, 
   Badge,
-  Tooltip,
-  Form
+  Tooltip
 } from 'antd';
 import { 
   PaperClipOutlined,
@@ -48,10 +47,8 @@ const PhaseWorkspaceModal = ({ isOpen, onClose, phase, projectId }) => {
   const [showRevisionsModal, setShowRevisionsModal] = useState(false);
   const [revisionsList, setRevisionsList] = useState([]);
   const [loadingRevisions, setLoadingRevisions] = useState(false);
-  const [showRevisionResponseModal, setShowRevisionResponseModal] = useState(false);
-  const [revisionResponseFiles, setRevisionResponseFiles] = useState([]);
-  const [uploadingRevisionResponse, setUploadingRevisionResponse] = useState(false);
-  const [revisionForm] = Form.useForm();
+  const [revisionResponseFiles, setRevisionResponseFiles] = useState({});
+  const [uploadingRevisionResponse, setUploadingRevisionResponse] = useState({});
   const [phaseProjectId, setPhaseProjectId] = useState(null);
   const fileInputRef = useRef(null);
   const messagesEndRef = useRef(null);
@@ -130,7 +127,7 @@ const PhaseWorkspaceModal = ({ isOpen, onClose, phase, projectId }) => {
     } finally {
       setIsLoading(false);
     }
-  }, [baseUrl, projectId, phase]);
+  }, [baseUrl, phase]);
 
   useEffect(() => {
     if (isOpen && phase) {
@@ -297,40 +294,52 @@ const PhaseWorkspaceModal = ({ isOpen, onClose, phase, projectId }) => {
     }
   };
 
-  const handleRevisionResponseFileUpload = (file) => {
-    setRevisionResponseFiles(prev => [...prev, {
-      uid: file.uid,
-      name: file.name,
-      status: 'done',
-      originFileObj: file
-    }]);
+  const handleRevisionResponseFileUpload = (file, revisionId) => {
+    setRevisionResponseFiles(prev => ({
+      ...prev,
+      [revisionId]: [{
+        uid: file.uid,
+        name: file.name,
+        status: 'done',
+        originFileObj: file
+      }]
+    }));
     return false; // Prevent default upload behavior
   };
 
-  const submitRevisionResponse = async (values) => {
-    if (revisionResponseFiles.length === 0) {
-      toast.error('Please upload at least one file to respond to the revision');
+  // const removeRevisionResponseFile = (file, revisionId) => {
+  //   setRevisionResponseFiles(prev => ({
+  //     ...prev,
+  //     [revisionId]: (prev[revisionId] || []).filter(f => f.uid !== file.uid)
+  //   }));
+  // };
+
+  const submitRevisionResponse = async (revisionId, message = '') => {
+    const files = revisionResponseFiles[revisionId] || [];
+    if (files.length === 0) {
+      toast.error('Please upload at least one file to respond to this revision');
       return;
     }
 
     try {
-      setUploadingRevisionResponse(true);
+      setUploadingRevisionResponse(prev => ({ ...prev, [revisionId]: true }));
       const token = SecureStorage.getLocalItem('token');
-      const userId = SecureStorage.getLocalItem('user_id');
       
-      // Upload the revision response file
-      for (const file of revisionResponseFiles) {
+      // Upload the revision response file using the new API format
+      for (const file of files) {
         const base64Content = await convertFileToBase64(file.originFileObj);
+        
+        // Create a temporary file path for the revised file
+        const revisedFilePath = `uploads_files/revisions/${Date.now()}_${file.name}`;
         
         const response = await axios.post(
           `${baseUrl}student.php`,
           {
-            operation: 'uploadRevisionResponse',
-            phase_project_id: parseInt(projectId),
-            user_id: parseInt(userId),
+            operation: 'updateFileRevise',
+            revision_phase_id: parseInt(revisionId),
+            revised_file: revisedFilePath,
             file: base64Content,
-            file_name: file.name,
-            revision_response_message: values.message || ''
+            file_name: file.name
           },
           {
             headers: {
@@ -341,21 +350,21 @@ const PhaseWorkspaceModal = ({ isOpen, onClose, phase, projectId }) => {
         );
         
         if (response.data.status === 'success') {
-          toast.success(`Revision response uploaded successfully`);
+          toast.success(`Revision response submitted successfully`);
         } else {
-          throw new Error(response.data.message || 'Failed to upload revision response');
+          throw new Error(response.data.message || 'Failed to submit revision response');
         }
       }
       
-      setShowRevisionResponseModal(false);
-      revisionForm.resetFields();
-      setRevisionResponseFiles([]);
+      // Clear files for this specific revision
+      setRevisionResponseFiles(prev => ({ ...prev, [revisionId]: [] }));
       fetchPhaseData();
+      fetchRevisions(); // Refresh revisions to show updated status
     } catch (error) {
       console.error('Error submitting revision response:', error);
       toast.error('Failed to submit revision response');
     } finally {
-      setUploadingRevisionResponse(false);
+      setUploadingRevisionResponse(prev => ({ ...prev, [revisionId]: false }));
     }
   };
 
@@ -444,12 +453,12 @@ const PhaseWorkspaceModal = ({ isOpen, onClose, phase, projectId }) => {
     onRemove: (file) => {
       setSelectedFiles(prev => prev.filter(f => f.uid !== file.uid));
     },
-    fileList: selectedFiles.map((file, index) => ({
+    fileList: Array.isArray(selectedFiles) ? selectedFiles.map((file, index) => ({
       uid: file.uid || index,
       name: file.name,
       status: 'done',
       size: file.size
-    }))
+    })) : []
   };
 
   return (
@@ -1016,13 +1025,44 @@ const PhaseWorkspaceModal = ({ isOpen, onClose, phase, projectId }) => {
                           </div>
                         )}
 
+                        {/* Student Response Section */}
+                        <div style={{
+                          marginTop: '16px',
+                          padding: '16px',
+                          background: revision.revised_file ? '#f0f9ff' : '#fff7e6',
+                          borderRadius: '12px',
+                          border: revision.revised_file ? '2px solid #91d5ff' : '2px dashed #ffd591'
+                        }}>
+                          <Space direction="vertical" size={12} style={{ width: '100%' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                              <Text strong style={{ 
+                                fontSize: '14px', 
+                                color: revision.revised_file ? '#0958d9' : '#d48806'
+                              }}>
+                                {revision.revised_file ? '📤 Your Response' : '⏳ Upload Your Response'}
+                              </Text>
+                              {revision.revised_file && (
+                                <Badge 
+                                  status="success" 
+                                  text="Submitted" 
+                                  style={{ fontSize: '12px' }}
+                                />
+                              )}
+                            </div>
+                            
+                           
+                           
+                          </Space>
+                        </div>
+
                         {/* Footer Info */}
                         <div style={{ 
                           display: 'flex', 
                           justifyContent: 'space-between',
                           alignItems: 'center',
                           paddingTop: '12px',
-                          borderTop: '1px solid #f0f0f0'
+                          borderTop: '1px solid #f0f0f0',
+                          marginTop: '16px'
                         }}>
                           <Space size={20}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -1098,17 +1138,17 @@ const PhaseWorkspaceModal = ({ isOpen, onClose, phase, projectId }) => {
             }}>
               <Upload.Dragger
                 name="revisionResponseFiles"
-                multiple
                 beforeUpload={handleRevisionResponseFileUpload}
-                fileList={revisionResponseFiles}
+                fileList={Array.isArray(revisionResponseFiles) ? revisionResponseFiles : []}
                 onRemove={(file) => {
-                  setRevisionResponseFiles(prev => prev.filter(f => f.uid !== file.uid));
+                  setRevisionResponseFiles(prev => Array.isArray(prev) ? prev.filter(f => f.uid !== file.uid) : []);
                 }}
                 style={{ 
                   background: 'linear-gradient(135deg, #fafffe 0%, #f5fbf6 100%)',
                   minHeight: '120px',
                   border: 'none'
                 }}
+                maxCount={1}
               >
                 <div style={{ padding: '20px' }}>
                   <div style={{
@@ -1128,7 +1168,7 @@ const PhaseWorkspaceModal = ({ isOpen, onClose, phase, projectId }) => {
                     Drop files here or click to upload
                   </Title>
                   <Text style={{ color: '#79AC78', fontSize: '13px' }}>
-                    Support for PDF, DOC, DOCX, and image files
+                    Upload one file only - PDF, DOC, DOCX, or image files
                   </Text>
                 </div>
               </Upload.Dragger>
@@ -1141,7 +1181,7 @@ const PhaseWorkspaceModal = ({ isOpen, onClose, phase, projectId }) => {
                 }}>
                   <Space direction="vertical" style={{ width: '100%' }} size={12}>
                     <Text strong style={{ color: '#618264', fontSize: '14px' }}>
-                      📎 Selected Files ({revisionResponseFiles.length})
+                      📎 Selected File
                     </Text>
                     
                     <List

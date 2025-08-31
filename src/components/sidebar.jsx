@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { 
   HomeIcon, 
   FolderIcon, 
@@ -20,7 +20,7 @@ const Sidebar = () => {
   const [masterFilesOpen, setMasterFilesOpen] = useState(false);
   const [userRole, setUserRole] = useState('');
   const location = useLocation();
-  const navigate = useNavigate();
+  // const navigate = useNavigate();
 
   useEffect(() => {
     // Get user role from SecureStorage

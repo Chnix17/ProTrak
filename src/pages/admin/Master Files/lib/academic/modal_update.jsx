@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, Form, Input, Select, DatePicker, Button, message } from 'antd';
+import { Modal, Form, Input, Select, DatePicker, Button } from 'antd';
 import { EditOutlined } from '@ant-design/icons';
 import { toast } from 'sonner';
 import axios from 'axios';
@@ -136,4 +136,4 @@ const Update_Modal = ({ show, onHide, fetchAcademicYears, academicYear, semester
   );
 };
 
-export default Update_Modal;
+export { Update_Modal };

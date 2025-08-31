@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 
 const SidebarContext = createContext();
 
@@ -57,29 +57,29 @@ export const SidebarProvider = ({ children }) => {
     }
   };
 
-  const closeSidebar = () => {
+  const closeSidebar = useCallback(() => {
     setIsOpen(false);
     setIsCollapsed(false);
-  };
+  }, []);
 
-  const openSidebar = () => {
+  const openSidebar = useCallback(() => {
     setIsOpen(true);
     setIsCollapsed(false);
-  };
+  }, []);
 
   // Touch gesture handling
   const minSwipeDistance = 50;
 
-  const onTouchStart = (e) => {
+  const onTouchStart = useCallback((e) => {
     setTouchEnd(null);
     setTouchStart(e.targetTouches[0].clientX);
-  };
+  }, []);
 
-  const onTouchMove = (e) => {
+  const onTouchMove = useCallback((e) => {
     setTouchEnd(e.targetTouches[0].clientX);
-  };
+  }, []);
 
-  const onTouchEnd = () => {
+  const onTouchEnd = useCallback(() => {
     if (!touchStart || !touchEnd) return;
     
     const distance = touchStart - touchEnd;
@@ -89,12 +89,11 @@ export const SidebarProvider = ({ children }) => {
     if (isMobile) {
       if (isLeftSwipe && isOpen) {
         closeSidebar();
-      } else if (isRightSwipe && !isOpen && touchStart < 50) {
-        // Only open if swipe starts from left edge
+      } else if (isRightSwipe && !isOpen) {
         openSidebar();
       }
     }
-  };
+  }, [isMobile, isOpen, touchStart, touchEnd, closeSidebar, openSidebar]);
 
   // Add touch event listeners
   useEffect(() => {
@@ -109,7 +108,7 @@ export const SidebarProvider = ({ children }) => {
         document.removeEventListener('touchend', onTouchEnd);
       };
     }
-  }, [isMobile, isOpen, touchStart, touchEnd]);
+  }, [isMobile, isOpen, touchStart, touchEnd, onTouchStart, onTouchMove, onTouchEnd]);
 
   const value = {
     isOpen,

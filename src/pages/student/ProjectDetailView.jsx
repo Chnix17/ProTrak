@@ -1,11 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   ArrowLeftIcon, 
   DocumentTextIcon,
   ClipboardDocumentListIcon,
   Squares2X2Icon,
-  SparklesIcon
+  SparklesIcon,
+  CheckCircleIcon,
+  UserGroupIcon
 } from '@heroicons/react/24/outline';
 import { toast } from 'sonner';
 import { SecureStorage } from '../../utils/encryption';
@@ -13,6 +15,8 @@ import axios from 'axios';
 import Sidebar from '../../components/sidebar';
 import MainTab from './components/MainTab';
 import KanbanTab from './components/KanbanTab';
+import TaskTab from './components/TaskTab';
+import MembersTab from './components/MembersTab';
 
 const ProjectDetailView = () => {
   const { projectMasterId, projectId } = useParams();
@@ -23,7 +27,7 @@ const ProjectDetailView = () => {
   const [isLoading, setIsLoading] = useState(true);
   const baseUrl = SecureStorage.getLocalItem("url");
 
-  const fetchProjectDetails = async () => {
+  const fetchProjectDetails = useCallback(async () => {
     try {
       setIsLoading(true);
       const token = SecureStorage.getLocalItem('token');
@@ -59,15 +63,17 @@ const ProjectDetailView = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [projectId, baseUrl]);
 
   useEffect(() => {
     fetchProjectDetails();
-  }, [projectId]);
+  }, [fetchProjectDetails]);
 
   const tabs = [
     { id: 'main', name: 'Main', description: 'Project phases and milestones' },
-    { id: 'kanban', name: 'Kanban', description: 'Task management and to-do lists' }
+    { id: 'kanban', name: 'Kanban', description: 'Task management and to-do lists' },
+    { id: 'tasks', name: 'Tasks', description: 'Task management with assignments and tracking' },
+    { id: 'members', name: 'Members', description: 'Team members and their performance ratings' }
   ];
 
   if (isLoading) {
@@ -164,7 +170,9 @@ const ProjectDetailView = () => {
               <nav className="-mb-px flex space-x-1 px-6">
                 {tabs.map((tab) => {
                   const isActive = activeTab === tab.id;
-                  const TabIcon = tab.id === 'main' ? ClipboardDocumentListIcon : Squares2X2Icon;
+                  const TabIcon = tab.id === 'main' ? ClipboardDocumentListIcon : 
+                                 tab.id === 'kanban' ? Squares2X2Icon : 
+                                 tab.id === 'tasks' ? CheckCircleIcon : UserGroupIcon;
                   
                   return (
                     <button
@@ -216,6 +224,22 @@ const ProjectDetailView = () => {
                       project={project} 
                       projectId={projectId}
                       onTaskUpdate={fetchProjectDetails}
+                    />
+                  </div>
+                )}
+                {activeTab === 'tasks' && (
+                  <div className="animate-fadeIn">
+                    <TaskTab 
+                      project={project} 
+                      projectId={projectId}
+                      onTaskUpdate={fetchProjectDetails}
+                    />
+                  </div>
+                )}
+                {activeTab === 'members' && (
+                  <div className="animate-fadeIn">
+                    <MembersTab 
+                      projectId={projectId}
                     />
                   </div>
                 )}

@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Modal, Form, Input, Select, DatePicker, Button, message } from 'antd';
+import React, { useState } from 'react';
+import { Modal, Form, Input, Select, DatePicker, Button } from 'antd';
 import { PlusCircleOutlined } from '@ant-design/icons';
 import { toast } from 'sonner';
 import axios from 'axios';
@@ -14,6 +14,7 @@ const Create_Modal = ({ show, onHide, fetchAcademicYears, semesters }) => {
   const baseUrl = SecureStorage.getLocalItem("url");
 
   const handleSubmit = async (values) => {
+    console.log('handleSubmit called with values:', values);
     setLoading(true);
     try {
       const jsonData = {
@@ -25,7 +26,7 @@ const Create_Modal = ({ show, onHide, fetchAcademicYears, semesters }) => {
         school_year_admin_id: SecureStorage.getLocalItem("user_id")
       };
 
-      console.log(jsonData);
+      console.log('Sending data:', jsonData);
 
       const response = await axios.post(`${baseUrl}admin.php`, jsonData, {
         headers: {
@@ -67,7 +68,10 @@ const Create_Modal = ({ show, onHide, fetchAcademicYears, semesters }) => {
           key="submit"
           type="primary"
           loading={loading}
-          onClick={() => form.submit()}
+          onClick={() => {
+            console.log('Button clicked, attempting to submit form');
+            form.submit();
+          }}
           icon={<PlusCircleOutlined />}
         >
           Add Academic Year
@@ -78,6 +82,9 @@ const Create_Modal = ({ show, onHide, fetchAcademicYears, semesters }) => {
         form={form}
         layout="vertical"
         onFinish={handleSubmit}
+        onFinishFailed={(errorInfo) => {
+          console.log('Form validation failed:', errorInfo);
+        }}
         initialValues={{
           school_year_semester_id: semesters[0]?.semester_id
         }}

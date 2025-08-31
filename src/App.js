@@ -80,6 +80,7 @@ const App = () => {
             '/faculty/workspace/projects',
             '/student/workspace',
             '/student/project',
+            '/register'
         ];
 
         // Only show not found if we're not on the root path and the path is not in validPaths
@@ -103,6 +104,7 @@ const App = () => {
                         <Routes>
                             <Route path="/" element={<Navigate to="/login" replace />} />
                             <Route path="/login" element={<Logins />} />
+                            {/* <Route path="/register" element={<Register />} /> */}
                             <Route path="/admin/dashboard" element={<AdminDashboard />} />
                             <Route path="/admin/academic" element={<AcademicDashboard/>}/>
                             <Route path="/student/dashboard" element={<StudentDashbaord/>}/>
