@@ -25,7 +25,7 @@ import User from './pages/admin/Master Files/User';
 export const ThemeContext = createContext();
 
 const App = () => {
-    const defaultUrl = "http://localhost/coc/itb/";
+    const defaultUrl = "http://localhost/protrack/api/api/";
     const storedUrl = SecureStorage.getLocalItem("url");
     
     if (!storedUrl || storedUrl !== defaultUrl) {

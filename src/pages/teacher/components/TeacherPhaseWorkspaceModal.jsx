@@ -761,7 +761,7 @@ const TeacherPhaseWorkspaceModal = ({ isOpen, onClose, phase, projectId, onPhase
                   Student Submissions
                 </Title>
                 <Space size={4}>
-                  {(phaseStatus === 'Revision Needed' || phaseStatus === 'Revision Nedded' || phaseStatus === 'Completed' || phaseStatus === 'Approved') && (
+                  {(phaseStatus === 'Revision Needed' || phaseStatus === 'Revision Nedded' || phaseStatus === 'Completed' || phaseStatus === 'Approved' || phaseStatus === 'Failed') && (
                     <Button
                       size="small"
                       icon={<EyeOutlined />}
@@ -794,7 +794,7 @@ const TeacherPhaseWorkspaceModal = ({ isOpen, onClose, phase, projectId, onPhase
               </div>
               
               {/* Review Action Buttons for Under Review Status */}
-              {phaseStatus === 'Under Review' && phaseStatus !== 'Completed' && (
+              {phaseStatus === 'Under Review' && phaseStatus !== 'Completed' && phaseStatus !== 'Failed' && phaseStatus !== 'Revision Needed' && phaseStatus !== 'Approved' && (
                 <div style={{ marginBottom: '16px' }}>
                   <Space direction="vertical" size={8} style={{ width: '100%' }}>
                     <Text strong style={{ fontSize: '12px', color: '#722ed1' }}>

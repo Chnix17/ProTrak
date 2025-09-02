@@ -37,7 +37,7 @@ const { Title, Text } = Typography;
 const { Option } = Select;
 const { RangePicker } = DatePicker;
 
-const TaskTab = ({ project, projectId, onTaskUpdate }) => {
+const TaskTab = ({ project, projectId, onTaskUpdate, isViewOnly = false }) => {
   const [tasks, setTasks] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -167,38 +167,6 @@ const TaskTab = ({ project, projectId, onTaskUpdate }) => {
     }
   }, [projectId, fetchTasks, fetchUsers, fetchPriorities]);
 
-  // Toggle task completion status
-  const toggleTaskStatus = async (task, status) => {
-    try {
-      const token = SecureStorage.getLocalItem('token');
-      
-      const response = await axios.post(
-        `${baseUrl}student.php`,
-        { 
-          operation: 'updateAssignedTask',
-          task_id: task.id
-        },
-        { 
-          headers: { 
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          }
-        }
-      );
-      
-      if (response.data.status === 'success') {
-        message.success('Task status updated successfully!');
-        fetchTasks();
-        if (onTaskUpdate) onTaskUpdate();
-      } else {
-        message.error(response.data.message || 'Failed to update task status');
-      }
-    } catch (error) {
-      console.error('Error updating task status:', error);
-      message.error(error.response?.data?.message || 'Failed to update task status');
-    }
-  };
-
   // Handle task creation
   const handleCreateTask = async (values) => {
     try {
@@ -273,11 +241,6 @@ const TaskTab = ({ project, projectId, onTaskUpdate }) => {
     return statusMap[status] || { color: '#d9d9d9', text: 'Unknown' };
   };
 
-  // Get status text
-  // const getStatusText = (isDone) => {
-  //   return isDone ? 'Mark as Not Done' : 'Mark as Done';
-  // };
-
   // Table columns configuration
   const columns = [
     {
@@ -290,15 +253,11 @@ const TaskTab = ({ project, projectId, onTaskUpdate }) => {
         return (
           <div className="flex items-center space-x-3">
             <div 
-              className={`w-6 h-6 rounded-full border-2 flex items-center justify-center cursor-pointer transition-colors ${
+              className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
                 isCompleted 
                   ? 'bg-[#618264] border-[#618264]' 
-                  : 'border-gray-300 hover:border-[#618264]'
+                  : 'border-gray-300'
               }`}
-              onClick={(e) => {
-                e.stopPropagation();
-                toggleTaskStatus(record, !isCompleted);
-              }}
             >
               {isCompleted && <CheckCircleOutlined className="text-white" />}
             </div>
@@ -411,7 +370,7 @@ const TaskTab = ({ project, projectId, onTaskUpdate }) => {
         );
       },
     },
-    {
+    ...(!isViewOnly ? [{
       title: '',
       key: 'actions',
       width: '5%',
@@ -419,23 +378,8 @@ const TaskTab = ({ project, projectId, onTaskUpdate }) => {
         <Dropdown
           menu={{
             items: [
-              { 
-                key: 'edit', 
-                label: 'Edit Task',
-                onClick: ({ domEvent }) => {
-                  domEvent.stopPropagation();
-                  // Handle edit
-                }
-              },
-              { 
-                key: 'delete', 
-                label: 'Delete Task', 
-                danger: true,
-                onClick: ({ domEvent }) => {
-                  domEvent.stopPropagation();
-                  // Handle delete
-                }
-              }
+              { key: 'edit', label: 'Edit Task' },
+              { key: 'delete', label: 'Delete Task', danger: true }
             ]
           }}
           trigger={['click']}
@@ -443,7 +387,7 @@ const TaskTab = ({ project, projectId, onTaskUpdate }) => {
           <Button type="text" icon={<MoreOutlined />} size="small" />
         </Dropdown>
       ),
-    },
+    }] : []),
   ];
 
   return (
@@ -455,18 +399,20 @@ const TaskTab = ({ project, projectId, onTaskUpdate }) => {
             Project Tasks
           </Title>
           <Text type="secondary">
-            Manage and track project tasks with team assignments
+            {isViewOnly ? 'View project tasks and assignments' : 'Manage and track project tasks with team assignments'}
           </Text>
         </div>
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={() => setIsModalVisible(true)}
-          style={{ backgroundColor: '#618264', borderColor: '#618264' }}
-          className="hover:!bg-[#79AC78] hover:!border-[#79AC78]"
-        >
-          Add Task
-        </Button>
+        {!isViewOnly && (
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => setIsModalVisible(true)}
+            style={{ backgroundColor: '#618264', borderColor: '#618264' }}
+            className="hover:!bg-[#79AC78] hover:!border-[#79AC78]"
+          >
+            Add Task
+          </Button>
+        )}
       </div>
 
       {/* Task Statistics */}
@@ -514,124 +460,126 @@ const TaskTab = ({ project, projectId, onTaskUpdate }) => {
       </Card>
 
       {/* Add Task Modal */}
-      <Modal
-        title={
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-[#618264] rounded-lg flex items-center justify-center">
-              <PlusOutlined className="text-white text-sm" />
+      {!isViewOnly && (
+        <Modal
+          title={
+            <div className="flex items-center space-x-2">
+              <div className="w-8 h-8 bg-[#618264] rounded-lg flex items-center justify-center">
+                <PlusOutlined className="text-white text-sm" />
+              </div>
+              <span className="text-lg font-semibold">Add New Task</span>
             </div>
-            <span className="text-lg font-semibold">Add New Task</span>
-          </div>
-        }
-        open={isModalVisible}
-        onCancel={() => {
-          setIsModalVisible(false);
-          form.resetFields();
-        }}
-        footer={null}
-        width={600}
-        className="add-task-modal"
-      >
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={handleCreateTask}
-          className="mt-6"
+          }
+          open={isModalVisible}
+          onCancel={() => {
+            setIsModalVisible(false);
+            form.resetFields();
+          }}
+          footer={null}
+          width={600}
+          className="add-task-modal"
         >
-          <Form.Item
-            name="project_task_name"
-            label="Task Name"
-            rules={[{ required: true, message: 'Please enter task name' }]}
+          <Form
+            form={form}
+            layout="vertical"
+            onFinish={handleCreateTask}
+            className="mt-6"
           >
-            <Input 
-              placeholder="Enter task name"
-              size="large"
-            />
-          </Form.Item>
-
-          <Row gutter={16}>
-            <Col xs={24} sm={12}>
-              <Form.Item
-                name="project_priority_id"
-                label="Priority"
-                rules={[{ required: true, message: 'Please select priority' }]}
-              >
-                <Select 
-                  placeholder="Select priority"
-                  size="large"
-                >
-                  {priorities.map(priority => (
-                    <Option key={priority.id} value={priority.id}>
-                      <div className="flex items-center space-x-2">
-                        <FlagOutlined style={{ color: priority.color }} />
-                        <span>{priority.name}</span>
-                      </div>
-                    </Option>
-                  ))}
-                </Select>
-              </Form.Item>
-            </Col>
-            <Col xs={24} sm={12}>
-              <Form.Item
-                name="assigned_users"
-                label="Assign To"
-                rules={[{ required: true, message: 'Please assign users' }]}
-              >
-                <Select 
-                  mode="multiple"
-                  placeholder="Select team members"
-                  size="large"
-                  optionLabelProp="label"
-                >
-                  {users.map(user => (
-                    <Option key={user.project_users_id} value={user.project_users_id} label={user.full_name}>
-                      <div className="flex items-center space-x-2">
-                        <Avatar size="small" style={{ backgroundColor: '#618264' }}>
-                          {user.full_name?.charAt(0)?.toUpperCase()}
-                        </Avatar>
-                        <span>{user.full_name}</span>
-                      </div>
-                    </Option>
-                  ))}
-                </Select>
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Form.Item
-            name="dateRange"
-            label="Duration"
-            rules={[{ required: true, message: 'Please select date range' }]}
-          >
-            <RangePicker 
-              size="large"
-              style={{ width: '100%' }}
-              format="YYYY-MM-DD"
-            />
-          </Form.Item>
-
-          <div className="flex justify-end space-x-3 mt-6">
-            <Button 
-              onClick={() => {
-                setIsModalVisible(false);
-                form.resetFields();
-              }}
-              size="large"
+            <Form.Item
+              name="project_task_name"
+              label="Task Name"
+              rules={[{ required: true, message: 'Please enter task name' }]}
             >
-              Cancel
-            </Button>
-            <Button 
-              type="primary" 
-              htmlType="submit"
-              size="large"
-              style={{ backgroundColor: '#618264', borderColor: '#618264' }}
-              className="hover:!bg-[#79AC78] hover:!border-[#79AC78]"
+              <Input 
+                placeholder="Enter task name"
+                size="large"
+              />
+            </Form.Item>
+
+            <Row gutter={16}>
+              <Col xs={24} sm={12}>
+                <Form.Item
+                  name="project_priority_id"
+                  label="Priority"
+                  rules={[{ required: true, message: 'Please select priority' }]}
+                >
+                  <Select 
+                    placeholder="Select priority"
+                    size="large"
+                  >
+                    {priorities.map(priority => (
+                      <Option key={priority.id} value={priority.id}>
+                        <div className="flex items-center space-x-2">
+                          <FlagOutlined style={{ color: priority.color }} />
+                          <span>{priority.name}</span>
+                        </div>
+                      </Option>
+                    ))}
+                  </Select>
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={12}>
+                <Form.Item
+                  name="assigned_users"
+                  label="Assign To"
+                  rules={[{ required: true, message: 'Please assign users' }]}
+                >
+                  <Select 
+                    mode="multiple"
+                    placeholder="Select team members"
+                    size="large"
+                    optionLabelProp="label"
+                  >
+                    {users.map(user => (
+                      <Option key={user.project_users_id} value={user.project_users_id} label={user.full_name}>
+                        <div className="flex items-center space-x-2">
+                          <Avatar size="small" style={{ backgroundColor: '#618264' }}>
+                            {user.full_name?.charAt(0)?.toUpperCase()}
+                          </Avatar>
+                          <span>{user.full_name}</span>
+                        </div>
+                      </Option>
+                    ))}
+                  </Select>
+                </Form.Item>
+              </Col>
+            </Row>
+
+            <Form.Item
+              name="dateRange"
+              label="Duration"
+              rules={[{ required: true, message: 'Please select date range' }]}
             >
-              Create Task
-            </Button>
-          </div>
-        </Form>
-      </Modal>
+              <RangePicker 
+                size="large"
+                style={{ width: '100%' }}
+                format="YYYY-MM-DD"
+              />
+            </Form.Item>
+
+            <div className="flex justify-end space-x-3 mt-6">
+              <Button 
+                onClick={() => {
+                  setIsModalVisible(false);
+                  form.resetFields();
+                }}
+                size="large"
+              >
+                Cancel
+              </Button>
+              <Button 
+                type="primary" 
+                htmlType="submit"
+                size="large"
+                style={{ backgroundColor: '#618264', borderColor: '#618264' }}
+                className="hover:!bg-[#79AC78] hover:!border-[#79AC78]"
+              >
+                Create Task
+              </Button>
+            </div>
+          </Form>
+        </Modal>
+      )}
 
       <style jsx>{`
         .monday-style-table .ant-table-thead > tr > th {

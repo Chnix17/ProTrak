@@ -50,9 +50,6 @@ const Workspace = () => {
         );
         if (response.data.status === 'success') {
           setSemesters(response.data.data);
-          if (response.data.data.length > 0) {
-            setSelectedSemester(response.data.data[0].semester_id);
-          }
         }
       } catch (error) {
         console.error('Error fetching semesters:', error);
@@ -89,9 +86,7 @@ const Workspace = () => {
         
         if (response.data.status === 'success') {
           setSchoolYears(response.data.data);
-          if (response.data.data.length > 0) {
-            setSelectedSchoolYear(response.data.data[0].school_year_id);
-          } else {
+          if (response.data.data.length === 0) {
             setSelectedSchoolYear('');
             setProjects([]);
           }
@@ -302,7 +297,7 @@ const Workspace = () => {
                           </h3>
                           <div className="flex items-center mt-1 text-sm text-gray-500">
                             <CodeBracketIcon className="h-4 w-4 mr-1" />
-                            <span className="font-mono">{project.project_code}</span>
+                            <span className="font-mono">CODE : {project.project_code}</span>
                           </div>
                         </div>
                       </div>
@@ -341,12 +336,29 @@ const Workspace = () => {
                         </button>
                         <button
                           onClick={() => {
+                            // Find the specific project data to get its school year dates
+                            const selectedProject = projects.find(p => p.project_master_id === project.project_master_id);
+                            console.log('=== WORKSPACE NAVIGATION DEBUG ===');
+                            console.log('Selected project:', selectedProject);
+                            console.log('Project school_year_start_date:', selectedProject?.school_year_start_date);
+                            console.log('Project school_year_end_date:', selectedProject?.school_year_end_date);
+                            console.log('Navigating with state:', {
+                              projectId: project.project_master_id,
+                              projectTitle: project.project_title,
+                              schoolYearId: selectedSchoolYear,
+                              semesterId: selectedSemester,
+                              schoolYearStartDate: selectedProject?.school_year_start_date,
+                              schoolYearEndDate: selectedProject?.school_year_end_date
+                            });
+                            
                             navigate('/teacher/projects', { 
                               state: { 
                                 projectId: project.project_master_id,
                                 projectTitle: project.project_title,
                                 schoolYearId: selectedSchoolYear,
-                                semesterId: selectedSemester
+                                semesterId: selectedSemester,
+                                schoolYearStartDate: selectedProject?.school_year_start_date,
+                                schoolYearEndDate: selectedProject?.school_year_end_date
                               }
                             });
                           }}

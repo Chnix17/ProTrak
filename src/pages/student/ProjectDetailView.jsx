@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { 
   ArrowLeftIcon, 
   DocumentTextIcon,
@@ -21,16 +21,28 @@ import MembersTab from './components/MembersTab';
 const ProjectDetailView = () => {
   const { projectMasterId, projectId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [activeTab, setActiveTab] = useState('main');
   const [project, setProject] = useState(null);
   const [masterProject, setMasterProject] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isProjectOwner, setIsProjectOwner] = useState(true);
   const baseUrl = SecureStorage.getLocalItem("url");
+  
+  // Check if this is accessed from active collaborations (read-only mode)
+  const isCollaborationView = location.state?.isCollaboration === true;
+  
+  // Debug logs
+  console.log('🔍 Collaboration Detection Debug:');
+  console.log('Navigation state:', location.state);
+  console.log('isCollaboration from state:', location.state?.isCollaboration);
+  console.log('isCollaborationView:', isCollaborationView);
 
   const fetchProjectDetails = useCallback(async () => {
     try {
       setIsLoading(true);
       const token = SecureStorage.getLocalItem('token');
+      const currentUserId = SecureStorage.getLocalItem('user_id');
       
       const response = await axios.post(
         `${baseUrl}student.php`,
@@ -47,12 +59,29 @@ const ProjectDetailView = () => {
       );
       
       if (response.data.status === 'success') {
-        setProject(response.data.data);
+        const projectData = response.data.data;
+        setProject(projectData);
+        
+        // Check if current user is the project owner
+        const isOwner = projectData.project_created_by === parseInt(currentUserId) || 
+                       projectData.created_by === parseInt(currentUserId) ||
+                       projectData.user_id === parseInt(currentUserId);
+        
+        setIsProjectOwner(isOwner);
+        
+        console.log('🏗️ Project Ownership Debug:');
+        console.log('Current user ID:', currentUserId);
+        console.log('Project created by:', projectData.project_created_by || projectData.created_by || projectData.user_id);
+        console.log('Is project owner:', isOwner);
+        console.log('ReadOnly mode (collaborator):', !isOwner);
+        console.log('Project data keys:', Object.keys(projectData));
+        console.log('Project data:', projectData);
+        
         // Set master project info from the main project data
         setMasterProject({
-          project_title: response.data.data.project_title,
-          project_code: `PROJ-${response.data.data.project_main_id}`,
-          project_description: response.data.data.project_description
+          project_title: projectData.project_title,
+          project_code: `PROJ-${projectData.project_main_id}`,
+          project_description: projectData.project_description
         });
       } else {
         toast.error('Failed to load project details');
@@ -71,7 +100,7 @@ const ProjectDetailView = () => {
 
   const tabs = [
     { id: 'main', name: 'Main', description: 'Project phases and milestones' },
-    { id: 'kanban', name: 'Kanban', description: 'Task management and to-do lists' },
+   
     { id: 'tasks', name: 'Tasks', description: 'Task management with assignments and tracking' },
     { id: 'members', name: 'Members', description: 'Team members and their performance ratings' }
   ];
@@ -240,6 +269,7 @@ const ProjectDetailView = () => {
                   <div className="animate-fadeIn">
                     <MembersTab 
                       projectId={projectId}
+                      readOnly={isCollaborationView}
                     />
                   </div>
                 )}

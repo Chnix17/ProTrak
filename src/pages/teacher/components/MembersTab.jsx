@@ -25,17 +25,12 @@ import dayjs from 'dayjs';
 
 const { Title, Text } = Typography;
 
-const MembersTab = ({ projectId, readOnly = false }) => {
+const MembersTab = ({ projectId, isViewOnly = false }) => {
   const [members, setMembers] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [editingRating, setEditingRating] = useState(null);
   const [tempRatings, setTempRatings] = useState({});
   const baseUrl = SecureStorage.getLocalItem("url");
-
-  // Debug logs for readOnly prop
-  console.log('👥 MembersTab Debug:');
-  console.log('readOnly prop received:', readOnly);
-  console.log('projectId:', projectId);
 
   // Fetch project members
   const fetchMembers = useCallback(async () => {
@@ -115,12 +110,6 @@ const MembersTab = ({ projectId, readOnly = false }) => {
 
   // Handle rating edit
   const handleRatingEdit = (memberId) => {
-    console.log('🔧 Edit Rating Clicked - readOnly:', readOnly);
-    if (readOnly) {
-      console.log('❌ Edit blocked - in read-only mode');
-      message.warning('Editing is disabled in collaboration view');
-      return;
-    }
     setEditingRating(memberId);
     const member = members.find(m => m.project_users_id === memberId);
     setTempRatings({
@@ -234,7 +223,7 @@ const MembersTab = ({ projectId, readOnly = false }) => {
 
                 {/* Rating */}
                 <div className="space-y-2">
-                  {!readOnly && editingRating === member.project_users_id ? (
+                  {!isViewOnly && editingRating === member.project_users_id ? (
                     <div className="space-y-3">
                       <div className="flex items-center justify-center space-x-2">
                         <Rate 
@@ -275,7 +264,7 @@ const MembersTab = ({ projectId, readOnly = false }) => {
                           {member.project_member_rating || 0}.0
                         </Text>
                       </div>
-                      {!readOnly && (
+                      {!isViewOnly && (
                         <Button 
                           size="small" 
                           type="link"

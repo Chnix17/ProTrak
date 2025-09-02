@@ -422,7 +422,9 @@ const StudentProjectView = () => {
                           </div>
                           <button
                             onClick={() => {
-                              navigate(`/student/project/${projectMasterId}/${project.project_main_id}`);
+                              navigate(`/student/project/${projectMasterId}/${project.project_main_id}`, {
+                                state: { isCollaboration: false }
+                              });
                             }}
                             className="inline-flex items-center px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary-medium focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-all duration-200"
                           >
@@ -592,12 +594,14 @@ const StudentProjectView = () => {
                               </div>
                               <button
                                 onClick={() => {
-                                  navigate(`/student/project-detail/${collaborator.project_main_master_id}/${collaborator.project_main_id}`);
+                                  navigate(`/student/project/${collaborator.project_main_master_id}/${collaborator.project_main_id}`, {
+                                    state: { isCollaboration: true }
+                                  });
                                 }}
-                                className="inline-flex items-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-600 focus:ring-offset-2 transition-all duration-200"
+                                className="inline-flex items-center px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary-medium focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-all duration-200"
                               >
                                 <EyeIcon className="-ml-0.5 mr-2 h-4 w-4" />
-                                View Project
+                                Open Project
                               </button>
                             </div>
                           </div>

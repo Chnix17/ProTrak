@@ -77,9 +77,14 @@ const MainTab = ({ project, projectId, onProjectUpdate }) => {
   const getPhaseStatusIcon = (status) => {
     switch (status.toLowerCase()) {
       case 'completed':
+      case 'passed':
         return <CheckCircleIcon className="h-5 w-5 text-green-500" />;
+      case 'failed':
+        return <ExclamationTriangleIcon className="h-5 w-5 text-red-500" />;
       case 'in progress':
         return <PlayIcon className="h-5 w-5 text-blue-500" />;
+      case 'needs revision':
+        return <ExclamationTriangleIcon className="h-5 w-5 text-yellow-500" />;
       case 'not started':
       default:
         return <ClockIcon className="h-5 w-5 text-gray-400" />;
@@ -89,9 +94,14 @@ const MainTab = ({ project, projectId, onProjectUpdate }) => {
   const getPhaseStatusColor = (status) => {
     switch (status.toLowerCase()) {
       case 'completed':
+      case 'passed':
         return 'bg-green-100 text-green-800 border-green-200';
+      case 'failed':
+        return 'bg-red-100 text-red-800 border-red-200';
       case 'in progress':
         return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'needs revision':
+        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
       case 'not started':
       default:
         return 'bg-gray-100 text-gray-800 border-gray-200';
@@ -154,7 +164,8 @@ const MainTab = ({ project, projectId, onProjectUpdate }) => {
       ) : (
         <div className="space-y-6">
           {phases.map((phase, index) => {
-            const isCompleted = phase.status.toLowerCase() === 'completed' || phase.status.toLowerCase() === 'approved';
+            const isCompleted = phase.status.toLowerCase() === 'completed' || phase.status.toLowerCase() === 'approved' || phase.status.toLowerCase() === 'passed';
+            const isFailed = phase.status.toLowerCase() === 'failed';
             const isInProgress = phase.status.toLowerCase() === 'in progress';
             const needsRevision = phase.status.toLowerCase() === 'needs revision';
             const isNotStarted = phase.status.toLowerCase() === 'not started';
@@ -167,6 +178,7 @@ const MainTab = ({ project, projectId, onProjectUpdate }) => {
                 {/* Phase Header */}
                 <div className={`p-6 border-l-4 ${
                   isCompleted ? 'border-green-500 bg-green-50/50' :
+                  isFailed ? 'border-red-500 bg-red-50/50' :
                   needsRevision ? 'border-yellow-500 bg-yellow-50/50' :
                   isInProgress ? 'border-primary bg-primary-subtle/30' :
                   'border-gray-300 bg-gray-50/50'
@@ -176,6 +188,7 @@ const MainTab = ({ project, projectId, onProjectUpdate }) => {
                       <div className="flex items-center space-x-3 mb-3">
                         <div className={`p-2 rounded-lg ${
                           isCompleted ? 'bg-green-100' :
+                          isFailed ? 'bg-red-100' :
                           needsRevision ? 'bg-yellow-100' :
                           isInProgress ? 'bg-primary-subtle' :
                           'bg-gray-100'
@@ -187,18 +200,25 @@ const MainTab = ({ project, projectId, onProjectUpdate }) => {
                             {phase.phase_main_name || `Phase ${index + 1}`}
                           </h4>
                           <div className="flex items-center space-x-2 mt-1">
-                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-                              isCompleted ? 'bg-green-100 text-green-800' :
-                              needsRevision ? 'bg-yellow-100 text-yellow-800' :
-                              isInProgress ? 'bg-primary-subtle text-primary' :
-                              'bg-gray-100 text-gray-800'
-                            }`}>
+                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getPhaseStatusColor(phase.status)}`}>
                               {phase.status}
                             </span>
                             {needsRevision && (
                               <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
                                 <ExclamationTriangleIcon className="h-3 w-3 mr-1" />
                                 Action Required
+                              </span>
+                            )}
+                            {isCompleted && (
+                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                <CheckCircleIcon className="h-3 w-3 mr-1" />
+                                {phase.status.toLowerCase() === 'passed' ? 'Passed' : 'Completed'}
+                              </span>
+                            )}
+                            {isFailed && (
+                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                <ExclamationTriangleIcon className="h-3 w-3 mr-1" />
+                                Failed
                               </span>
                             )}
                           </div>
@@ -240,7 +260,7 @@ const MainTab = ({ project, projectId, onProjectUpdate }) => {
                         </button>
                       )}
                       
-                      {(isInProgress || isCompleted || needsRevision) && (
+                      {(isInProgress || isCompleted || needsRevision || isFailed) && (
                         <button
                           onClick={() => {
                             setSelectedPhase(phase);
@@ -249,13 +269,15 @@ const MainTab = ({ project, projectId, onProjectUpdate }) => {
                           className={`inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow-md ${
                             isCompleted
                               ? 'text-white bg-green-600 hover:bg-green-700 focus:ring-green-500'
+                              : isFailed
+                              ? 'text-white bg-red-600 hover:bg-red-700 focus:ring-red-500'
                               : needsRevision
                               ? 'text-white bg-yellow-600 hover:bg-yellow-700 focus:ring-yellow-500'
                               : 'text-white bg-primary hover:bg-primary-medium focus:ring-primary'
                           }`}
                         >
                           <EyeIcon className="-ml-1 mr-2 h-4 w-4" />
-                          {needsRevision ? 'Review Feedback' : isCompleted ? 'View Results' : 'Open Workspace'}
+                          {isFailed ? 'View Failed Phase' : needsRevision ? 'Review Feedback' : isCompleted ? 'View Results' : 'Open Workspace'}
                         </button>
                       )}
                     </div>
