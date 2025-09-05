@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
-import { PlusIcon, PencilIcon, EyeSlashIcon, EyeIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, PencilIcon, EyeSlashIcon, EyeIcon, ArchiveBoxIcon, ArchiveBoxArrowDownIcon, ArrowUturnLeftIcon } from '@heroicons/react/24/outline';
 import { toast } from 'sonner';
 import { Create_Modal } from './lib/users/modal_create';
 import Update_Modal from './lib/users/modal_update';
@@ -19,15 +19,18 @@ const User = () => {
   const [titles, setTitles] = useState([]);
   const [userLevels, setUserLevels] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [showArchivedUsers, setShowArchivedUsers] = useState(false);
 
 
      const baseUrl = SecureStorage.getLocalItem("url");
 
-  const fetchUsers = useCallback(async () => {
+  const fetchUsers = useCallback(async (includeArchived = false) => {
     setLoading(true);
     try {
         const response = await axios.post(`${baseUrl}admin.php`, 
-            { operation: "fetchUsers" },
+            { 
+              operation: includeArchived ? "fetchInactiveUsers" : "fetchUsers" 
+            },
             { headers: { 'Content-Type': 'application/json' } }
         );
 
@@ -90,6 +93,12 @@ const User = () => {
     setIsCreateModalVisible(true);
   };
 
+  const toggleArchivedView = () => {
+    const newShowArchived = !showArchivedUsers;
+    setShowArchivedUsers(newShowArchived);
+    fetchUsers(newShowArchived);
+  };
+
 
   const handleEdit = async (user) => {
     try {
@@ -120,47 +129,62 @@ const User = () => {
     }
   };
 
-  const handleDelete = async (userId) => {
-    if (window.confirm('Are you sure you want to delete this user?')) {
+  const handleArchiveRestore = async (userId) => {
+    const isRestoring = showArchivedUsers;
+    const action = isRestoring ? 'restore' : 'archive';
+    const confirmMessage = isRestoring 
+      ? 'Are you sure you want to restore this user? This will activate their account.'
+      : 'Are you sure you want to archive this user? This will deactivate their account.';
+    
+    if (window.confirm(confirmMessage)) {
       try {
-        // Replace with actual API call
-        const response = await fetch(`/api/users/${userId}`, {
-          method: 'DELETE'
-        });
+        const response = await axios.post(`${baseUrl}admin.php`, 
+          {
+            operation: "updateUsers",
+            userId: userId,
+            archive: !isRestoring // false to restore (activate), true to archive
+          },
+          { headers: { 'Content-Type': 'application/json' } }
+        );
 
-        if (response.ok) {
-          toast.success('User deleted successfully');
-          fetchUsers();
+        if (response.data.status === 'success') {
+          toast.success(`User ${action}d successfully`);
+          fetchUsers(showArchivedUsers);
         } else {
-          throw new Error('Failed to delete user');
+          throw new Error(response.data.message || `Failed to ${action} user`);
         }
       } catch (error) {
-        toast.error('Failed to delete user');
+        console.error(`Error ${action}ing user:`, error);
+        toast.error(`Failed to ${action} user`);
       }
     }
   };
 
   const toggleUserStatus = async (userId, currentStatus) => {
-    try {
-      // Replace with actual API call
-      const response = await fetch(`/api/users/${userId}/status`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          users_is_active: currentStatus === 1 ? 0 : 1
-        })
-      });
+    const isActivating = currentStatus === 0;
+    const action = isActivating ? 'activate' : 'deactivate';
+    
+    if (window.confirm(`Are you sure you want to ${action} this user?`)) {
+      try {
+        const response = await axios.post(`${baseUrl}admin.php`, 
+          {
+            operation: "updateUsers",
+            userId: userId,
+            archive: !isActivating // false to activate (set to 1), true to deactivate (set to 0)
+          },
+          { headers: { 'Content-Type': 'application/json' } }
+        );
 
-      if (response.ok) {
-        toast.success('User status updated successfully');
-        fetchUsers();
-      } else {
-        throw new Error('Failed to update user status');
+        if (response.data.status === 'success') {
+          toast.success(`User ${action}d successfully`);
+          fetchUsers(showArchivedUsers);
+        } else {
+          throw new Error(response.data.message || `Failed to ${action} user`);
+        }
+      } catch (error) {
+        console.error(`Error ${action}ing user:`, error);
+        toast.error(`Failed to ${action} user`);
       }
-    } catch (error) {
-      toast.error('Failed to update user status');
     }
   };
 
@@ -183,13 +207,22 @@ const User = () => {
                 <h1 className="text-2xl font-bold text-gray-900">User Management</h1>
                 <p className="text-gray-600">Manage system users and their access levels</p>
               </div>
-              <button
-                onClick={showCreateModal}
-                className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 flex items-center gap-2 transition-colors"
-              >
-                <PlusIcon className="h-5 w-5" />
-                Add User
-              </button>
+              <div className="flex gap-3">
+                <button
+                  onClick={toggleArchivedView}
+                  className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 flex items-center gap-2 transition-colors"
+                >
+                  <ArchiveBoxArrowDownIcon className="h-5 w-5" />
+                  {showArchivedUsers ? 'View Active Users' : 'View Archived Users'}
+                </button>
+                <button
+                  onClick={showCreateModal}
+                  className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 flex items-center gap-2 transition-colors"
+                >
+                  <PlusIcon className="h-5 w-5" />
+                  Add User
+                </button>
+              </div>
             </div>
           </div>
 
@@ -218,7 +251,9 @@ const User = () => {
       {/* Users Table */}
       <div className="bg-white rounded-lg shadow-md overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-200">
-          <h3 className="text-lg font-medium text-gray-900">Users List</h3>
+          <h3 className="text-lg font-medium text-gray-900">
+            {showArchivedUsers ? 'Archived Users List' : 'Active Users List'}
+          </h3>
         </div>
 
         {loading ? (
@@ -304,11 +339,15 @@ const User = () => {
                           )}
                         </button>
                         <button
-                          onClick={() => handleDelete(user.id)}
-                          className="text-red-600 hover:text-red-900"
-                          title="Delete User"
+                          onClick={() => handleArchiveRestore(user.users_id)}
+                          className={showArchivedUsers ? "text-green-600 hover:text-green-900" : "text-orange-600 hover:text-orange-900"}
+                          title={showArchivedUsers ? "Restore User" : "Archive User"}
                         >
-                          <TrashIcon className="h-4 w-4" />
+                          {showArchivedUsers ? (
+                            <ArrowUturnLeftIcon className="h-4 w-4" />
+                          ) : (
+                            <ArchiveBoxIcon className="h-4 w-4" />
+                          )}
                         </button>
                       </div>
                     </td>

@@ -28,13 +28,16 @@ export const SidebarProvider = ({ children }) => {
   useEffect(() => {
     const checkScreenSize = () => {
       const mobile = window.innerWidth < 1024;
+      const wasMobile = isMobile;
       setIsMobile(mobile);
       
-      // Auto-close sidebar on mobile, auto-open on desktop
-      if (mobile && isOpen) {
-        setIsOpen(false);
-      } else if (!mobile && !isOpen && !isCollapsed) {
-        setIsOpen(true);
+      // Only auto-adjust on initial load or when switching between mobile/desktop
+      if (wasMobile !== mobile) {
+        if (!mobile && !isOpen && !isCollapsed) {
+          // Switching to desktop - open sidebar if it was closed
+          setIsOpen(true);
+        }
+        // Don't auto-close on mobile - let user control it
       }
     };
 
@@ -42,7 +45,7 @@ export const SidebarProvider = ({ children }) => {
     window.addEventListener('resize', checkScreenSize);
     
     return () => window.removeEventListener('resize', checkScreenSize);
-  }, [isOpen, isCollapsed]);
+  }, [isMobile, isOpen, isCollapsed]);
 
   const toggleSidebar = () => {
     if (isMobile) {

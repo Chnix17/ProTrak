@@ -638,17 +638,17 @@ const Projects = () => {
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            project.project_is_active === 1 
-                              ? 'bg-green-100 text-green-800' 
-                              : 'bg-red-100 text-red-800'
-                          }`}>
-                            {project.project_is_active === 1 ? (
-                              <><CheckCircleIcon className="h-3 w-3 mr-1" />Active</>
-                            ) : (
-                              <><XCircleIcon className="h-3 w-3 mr-1" />Inactive</>
-                            )}
-                          </span>
+                          {project.status_name ? (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                              <ClockIcon className="h-3 w-3 mr-1" />
+                              {project.status_name}
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                              <XCircleIcon className="h-3 w-3 mr-1" />
+                              No Status
+                            </span>
+                          )}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                           <button

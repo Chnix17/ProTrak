@@ -65,6 +65,7 @@ const PhaseWorkspaceModal = ({ isOpen, onClose, phase, projectId }) => {
   }, [messages]);
 
   const fetchPhaseData = React.useCallback(async () => {
+
     try {
       setIsLoading(true);
       const token = SecureStorage.getLocalItem('token');
@@ -83,6 +84,7 @@ const PhaseWorkspaceModal = ({ isOpen, onClose, phase, projectId }) => {
       
       console.log('Sending request payload:', requestPayload);
       console.log('Phase object:', phase);
+      console.log('About to make API call to:', `${baseUrl}student.php`);
       
       const response = await axios.post(
         `${baseUrl}student.php`,
@@ -95,8 +97,14 @@ const PhaseWorkspaceModal = ({ isOpen, onClose, phase, projectId }) => {
         }
       );
       
+      console.log('API Response received:', response.data);
+      
       if (response.data.status === 'success') {
         const data = response.data.data;
+        console.log('=== FULL API RESPONSE DATA ===');
+        console.log('Complete response.data:', response.data);
+        console.log('Complete data object:', data);
+        console.log('==============================');
         setMessages(data.discussions || []);
         setAttachments(data.files || []);
         
@@ -108,17 +116,25 @@ const PhaseWorkspaceModal = ({ isOpen, onClose, phase, projectId }) => {
           console.log('No phase_project_id found in response:', data);
         }
         
-        // Get the latest status from status_history based on created_at timestamp
+        // Get the latest status - check multiple possible locations
         let latestStatus = 'In Progress';
-        if (data.status_history && data.status_history.length > 0) {
+        if (data.status) {
+          // Direct status field
+          latestStatus = data.status;
+        } else if (data.current_status?.status_name) {
+          // Nested in current_status object
+          latestStatus = data.current_status.status_name;
+        } else if (data.status_history && data.status_history.length > 0) {
+          // From status history
           const sortedHistory = data.status_history.sort((a, b) => 
             new Date(b.phase_project_status_created_at) - new Date(a.phase_project_status_created_at)
           );
           latestStatus = sortedHistory[0].status_name;
-        } else if (data.current_status?.status_name) {
-          latestStatus = data.current_status.status_name;
         }
         
+        console.log('Setting phase status to:', latestStatus);
+        console.log('Current status object:', data.current_status);
+        console.log('Status history:', data.status_history);
         setPhaseStatus(latestStatus);
       }
     } catch (error) {
@@ -134,6 +150,10 @@ const PhaseWorkspaceModal = ({ isOpen, onClose, phase, projectId }) => {
       fetchPhaseData();
     }
   }, [isOpen, phase, fetchPhaseData]);
+
+  useEffect(() => {
+    console.log('Phase status changed to:', phaseStatus);
+  }, [phaseStatus]);
 
   const sendMessage = async () => {
     if (!newMessage.trim()) return;
@@ -604,7 +624,19 @@ const PhaseWorkspaceModal = ({ isOpen, onClose, phase, projectId }) => {
                 }}>
                   <Title level={5} style={{ margin: 0 }}>Attachments</Title>
                   <Space size={4}>
-                    {(phaseStatus === 'Revision Needed' || phaseStatus === 'Revision Nedded' || phaseStatus === 'Completed' || phaseStatus === 'Approved') && (
+                    {(() => {
+                      const validStatusesForRevisions = ['Revision Needed', 'Revision Nedded', 'Completed', 'Approved', 'Failed'];
+                      const shouldShow = validStatusesForRevisions.includes(phaseStatus);
+                      console.log('=== VIEW REVISIONS BUTTON DEBUG (Student) ===');
+                      console.log('Phase Status:', `"${phaseStatus}"`);
+                      console.log('Phase Status Type:', typeof phaseStatus);
+                      console.log('Valid Statuses:', validStatusesForRevisions);
+                      console.log('Includes Failed?:', validStatusesForRevisions.includes('Failed'));
+                      console.log('Status equals Failed?:', phaseStatus === 'Failed');
+                      console.log('Should Show Button:', shouldShow);
+                      console.log('=== END DEBUG ===');
+                      return shouldShow;
+                    })() && (
                       <Button
                         size="small"
                         icon={<EyeOutlined />}

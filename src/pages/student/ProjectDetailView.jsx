@@ -171,12 +171,57 @@ const ProjectDetailView = () => {
                           </span>
                         </div>
                       )}
+                      {project?.project_status_status_id && (
+                        <div className="flex items-center space-x-2">
+                          <div className="w-1 h-1 bg-white/60 rounded-full"></div>
+                          <span className="text-sm bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full flex items-center space-x-1">
+                            <CheckCircleIcon className="h-3 w-3" />
+                            <span>{project.status_master_name || `Status ID: ${project.project_status_status_id}`}</span>
+                          </span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
+
+          {/* Project Status Card */}
+          {project?.project_status_status_id && (
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-8">
+              <div className="flex items-start">
+                <div className="flex-shrink-0 bg-green-100 rounded-lg p-2 mr-4">
+                  <CheckCircleIcon className="h-5 w-5 text-green-600" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">Current Project Status</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="bg-gray-50 rounded-lg p-3">
+                      <p className="text-sm font-medium text-gray-600">Status</p>
+                      <p className="text-lg font-semibold text-gray-900">
+                        {project.status_master_name || `Status ID: ${project.project_status_status_id}`}
+                      </p>
+                    </div>
+                    {project.project_status_created_at && (
+                      <div className="bg-gray-50 rounded-lg p-3">
+                        <p className="text-sm font-medium text-gray-600">Last Updated</p>
+                        <p className="text-sm text-gray-900">
+                          {new Date(project.project_status_created_at).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Project Description Card */}
           {project?.description && (

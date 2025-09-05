@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
-import { PlusIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, PencilIcon } from '@heroicons/react/24/outline';
 import { toast } from 'sonner';
-import { Spin, Table, Space, Button, Card } from 'antd';
+import { Spin, Table, Button, Card } from 'antd';
 import Sidebar from '../../../components/sidebar';
 import { Create_Modal as CREATE_MODAL } from './lib/academic/modal_create';
 import { Update_Modal as UPDATE_MODAL } from './lib/academic/modal_update';
@@ -69,30 +69,30 @@ const AcademicYear = () => {
   //   setIsUpdateModalVisible(true);
   // };
 
-  const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this academic year?')) {
-      try {
-        const response = await axios.post(
-          `${baseUrl}admin.php`,
-          {
-            operation: 'deleteAcademicYear',
-            id: id
-          },
-          { headers: { 'Content-Type': 'application/json' } }
-        );
+  // const handleDelete = async (id) => {
+  //   if (window.confirm('Are you sure you want to delete this academic year?')) {
+  //     try {
+  //       const response = await axios.post(
+  //         `${baseUrl}admin.php`,
+  //         {
+  //           operation: 'deleteAcademicYear',
+  //           id: id
+  //         },
+  //         { headers: { 'Content-Type': 'application/json' } }
+  //       );
 
-        if (response.data.status === 'success') {
-          toast.success('Academic year deleted successfully');
-          fetchAcademicYears();
-        } else {
-          throw new Error(response.data.message || 'Failed to delete academic year');
-        }
-      } catch (error) {
-        console.error('Error deleting academic year:', error);
-        toast.error('Failed to delete academic year');
-      }
-    }
-  };
+  //       if (response.data.status === 'success') {
+  //         toast.success('Academic year deleted successfully');
+  //         fetchAcademicYears();
+  //       } else {
+  //         throw new Error(response.data.message || 'Failed to delete academic year');
+  //       }
+  //     } catch (error) {
+  //       console.error('Error deleting academic year:', error);
+  //       toast.error('Failed to delete academic year');
+  //     }
+  //   }
+  // };
 
   const getSemesterName = (semesterId) => {
     const semester = semesters.find(s => s.semester_id === semesterId);
@@ -156,22 +156,14 @@ const AcademicYear = () => {
                   title: 'Actions',
                   key: 'actions',
                   render: (_, record) => (
-                    <Space size="middle">
-                      <Button
-                        type="text"
-                        icon={<PencilIcon className="w-4 h-4" />}
-                        onClick={() => {
-                          setEditingYear(record);
-                          setIsUpdateModalVisible(true);
-                        }}
-                      />
-                      <Button
-                        type="text"
-                        danger
-                        icon={<TrashIcon className="w-4 h-4" />}
-                        onClick={() => handleDelete(record.school_year_id)}
-                      />
-                    </Space>
+                    <Button
+                      type="text"
+                      icon={<PencilIcon className="w-4 h-4" />}
+                      onClick={() => {
+                        setEditingYear(record);
+                        setIsUpdateModalVisible(true);
+                      }}
+                    />
                   ),
                 },
               ]}

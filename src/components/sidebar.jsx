@@ -146,51 +146,63 @@ const Sidebar = () => {
 
   // Determine sidebar width and visibility
   const sidebarWidth = isCollapsed ? 'w-20' : 'w-64';
-  const isVisible = isOpen || (!isMobile && !isCollapsed);
   
   return (
     <>
-      {/* Mobile Toggle Button */}
-      <div className={`fixed top-4 left-4 z-50 lg:hidden ${
-        isOpen ? 'translate-x-64' : 'translate-x-0'
-      } transition-transform duration-300 ease-in-out`}>
-        <button
-          onClick={toggleSidebar}
-          className="p-3 rounded-xl bg-white shadow-lg border border-gray-200 text-gray-600 hover:text-primary hover:bg-primary-subtle focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-all duration-200"
-        >
-          {isOpen ? (
-            <XMarkIcon className="h-5 w-5" />
-          ) : (
-            <Bars3Icon className="h-5 w-5" />
-          )}
-        </button>
-      </div>
+      {/* Mobile Toggle Button - Enhanced with better positioning */}
+      <button
+        onClick={toggleSidebar}
+        className={`fixed top-4 z-50 p-3 rounded-xl bg-white shadow-lg border border-gray-200 text-gray-600 hover:text-primary hover:bg-primary-subtle focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-all duration-300 lg:hidden ${
+          isOpen && isMobile ? 'left-72' : 'left-4'
+        }`}
+      >
+        {isOpen ? (
+          <XMarkIcon className="h-5 w-5" />
+        ) : (
+          <Bars3Icon className="h-5 w-5" />
+        )}
+      </button>
 
-      {/* Mobile Overlay */}
+      {/* Mobile Overlay - Enhanced */}
       {isOpen && isMobile && (
         <div 
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-30 lg:hidden"
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-30 lg:hidden transition-opacity duration-300"
           onClick={closeSidebar}
         />
       )}
 
-      {/* Sidebar */}
-      <div className={`fixed inset-y-0 left-0 z-40 ${sidebarWidth} bg-white shadow-2xl border-r border-gray-200 transform transition-all duration-300 ease-in-out ${
-        isVisible ? 'translate-x-0' : '-translate-x-full'
-      } ${isMobile ? 'lg:translate-x-0' : ''}`}>
+      {/* Sidebar - Enhanced mobile behavior */}
+      <div 
+        className={`fixed inset-y-0 left-0 z-40 bg-white shadow-2xl border-r border-gray-200 transition-all duration-300 ease-in-out ${
+          isMobile ? 'w-64' : sidebarWidth
+        } ${
+          isMobile 
+            ? (isOpen ? 'translate-x-0' : '-translate-x-full')
+            : 'translate-x-0'
+        } ${
+          !isMobile && isCollapsed ? 'lg:w-20' : 'lg:w-64'
+        }`}
+        style={{
+          transform: isMobile 
+            ? (isOpen ? 'translateX(0)' : 'translateX(-100%)')
+            : undefined
+        }}
+      >
         
         {/* Sidebar header */}
         <div className="flex items-center justify-between h-16 px-4 bg-gradient-to-r from-primary-dark to-primary shadow-lg">
-          <div className={`flex items-center transition-all duration-300 ${isCollapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'}`}>
+          <div className={`flex items-center transition-all duration-300 ${isCollapsed && !isMobile ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'}`}>
             <div className="flex items-center space-x-2">
               <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
                 <span className="text-white font-bold text-sm">PT</span>
               </div>
               <h1 className="text-lg font-bold text-white truncate">
-                {isAdmin ? 'ProTrack' : isFaculty ? 'ProTrack' : 'ProTrack'}
+                ProTrack
               </h1>
             </div>
           </div>
+          
+          {/* Desktop collapse button */}
           <button 
             onClick={toggleSidebar} 
             className="p-2 rounded-lg text-white/80 hover:text-white hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/20 transition-all duration-200 hidden lg:block"
@@ -200,6 +212,14 @@ const Sidebar = () => {
             ) : (
               <ChevronLeftIcon className="h-4 w-4" />
             )}
+          </button>
+
+          {/* Mobile close button */}
+          <button 
+            onClick={closeSidebar} 
+            className="p-2 rounded-lg text-white/80 hover:text-white hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/20 transition-all duration-200 lg:hidden"
+          >
+            <XMarkIcon className="h-4 w-4" />
           </button>
         </div>
 
@@ -212,21 +232,22 @@ const Sidebar = () => {
               <Link
                 key={item.name}
                 to={item.href}
-                className={`group flex items-center px-3 py-3 text-sm font-medium rounded-xl transition-all duration-200 relative ${
+                onClick={() => isMobile && closeSidebar()}
+                className={`group flex items-center px-3 py-3 text-sm font-medium rounded-xl transition-all duration-200 relative touch-manipulation ${
                   item.current
                     ? 'bg-primary-subtle text-primary shadow-sm border border-primary-light'
-                    : 'text-gray-700 hover:text-primary hover:bg-gray-50'
+                    : 'text-gray-700 hover:text-primary hover:bg-gray-50 active:bg-gray-100'
                 }`}
-                title={isCollapsed ? item.name : ''}
+                title={isCollapsed && !isMobile ? item.name : ''}
               >
                 <item.icon
                   className={`h-5 w-5 flex-shrink-0 ${
                     item.current 
                       ? 'text-primary' 
                       : 'text-gray-400 group-hover:text-primary'
-                  } ${!isCollapsed ? 'mr-3' : 'mx-auto'}`}
+                  } ${!isCollapsed || isMobile ? 'mr-3' : 'mx-auto'}`}
                 />
-                {!isCollapsed && <span className="truncate">{item.name}</span>}
+                {(!isCollapsed || isMobile) && <span className="truncate">{item.name}</span>}
                 {item.current && (
                   <div className="absolute left-0 top-1/2 transform -translate-y-1/2 w-1 h-6 bg-primary rounded-r-full"></div>
                 )}
@@ -238,12 +259,12 @@ const Sidebar = () => {
               <div className="space-y-1">
                 <button
                   onClick={toggleMasterFiles}
-                  className={`group w-full flex items-center px-3 py-3 text-sm font-medium rounded-xl transition-all duration-200 relative ${
+                  className={`group w-full flex items-center px-3 py-3 text-sm font-medium rounded-xl transition-all duration-200 relative touch-manipulation ${
                     masterFileItems.some(item => item.current)
                       ? 'bg-primary-subtle text-primary shadow-sm border border-primary-light'
-                      : 'text-gray-700 hover:text-primary hover:bg-gray-50'
+                      : 'text-gray-700 hover:text-primary hover:bg-gray-50 active:bg-gray-100'
                   }`}
-                  title={isCollapsed ? 'Master Files' : ''}
+                  title={isCollapsed && !isMobile ? 'Master Files' : ''}
                 >
                   <div className="flex items-center w-full">
                     <FolderIcon
@@ -251,9 +272,9 @@ const Sidebar = () => {
                         masterFileItems.some(item => item.current)
                           ? 'text-primary'
                           : 'text-gray-400 group-hover:text-primary'
-                      } ${!isCollapsed ? 'mr-3' : 'mx-auto'}`}
+                      } ${!isCollapsed || isMobile ? 'mr-3' : 'mx-auto'}`}
                     />
-                    {!isCollapsed && (
+                    {(!isCollapsed || isMobile) && (
                       <>
                         <span className="flex-1 text-left truncate">Master Files</span>
                         <div className={`transform transition-transform duration-200 ${
@@ -271,17 +292,18 @@ const Sidebar = () => {
 
                 {/* Master Files Submenu */}
                 <div className={`overflow-hidden transition-all duration-300 ease-in-out ${
-                  masterFilesOpen && !isCollapsed ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+                  masterFilesOpen && (!isCollapsed || isMobile) ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
                 }`}>
                   <div className="pl-4 space-y-1 mt-1">
                     {masterFileItems.map((item) => (
                       <Link
                         key={item.name}
                         to={item.href}
-                        className={`group flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 relative ${
+                        onClick={() => isMobile && closeSidebar()}
+                        className={`group flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 relative touch-manipulation ${
                           item.current
                             ? 'bg-primary-subtle text-primary shadow-sm'
-                            : 'text-gray-600 hover:text-primary hover:bg-gray-50'
+                            : 'text-gray-600 hover:text-primary hover:bg-gray-50 active:bg-gray-100'
                         }`}
                       >
                         <item.icon
