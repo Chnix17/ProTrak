@@ -1,10 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Progress, Card, Row, Col, Typography, Statistic, Tooltip } from 'antd';
+import { Progress, Card, Row, Col, Typography, Statistic, Tooltip, Alert, Badge } from 'antd';
 import { 
   CheckCircleOutlined, 
   ClockCircleOutlined, 
   FlagOutlined,
-  ProjectOutlined 
+  ProjectOutlined,
+  WarningOutlined,
+  ExclamationCircleOutlined,
+  InfoCircleOutlined
 } from '@ant-design/icons';
 import { SecureStorage } from '../../../utils/encryption';
 import axios from 'axios';
@@ -135,9 +138,93 @@ const ProjectProgressBar = ({ project, projectId }) => {
     return { percentage: overallPercentage, status };
   };
 
+  // Analyze project failure risk
+  const analyzeProjectHealth = () => {
+    const taskProgress = calculateTaskProgress();
+    // const phaseProgress = calculatePhaseProgress();
+    
+    if (!project?.phases || project.phases.length === 0) {
+      return { risk: 'unknown', level: 'info', message: 'No phases available for analysis' };
+    }
+
+    // Count phase statuses
+    const statusCounts = {
+      failed: 0,
+      revisions: 0,
+      pending: 0,
+      inProgress: 0,
+      completed: 0,
+      approved: 0
+    };
+
+    project.phases.forEach(phase => {
+      const status = phase.status.toLowerCase();
+      if (status === 'failed') statusCounts.failed++;
+      else if (status === 'revision nedded' || status === 'revisions needed') statusCounts.revisions++;
+      else if (status === 'pending') statusCounts.pending++;
+      else if (status === 'in progress') statusCounts.inProgress++;
+      else if (status === 'completed') statusCounts.completed++;
+      else if (status === 'approved') statusCounts.approved++;
+    });
+
+    const totalPhases = project.phases.length;
+    const failedRate = (statusCounts.failed / totalPhases) * 100;
+    const revisionRate = (statusCounts.revisions / totalPhases) * 100;
+    const completionRate = ((statusCounts.completed + statusCounts.approved) / totalPhases) * 100;
+    const taskCompletionRate = taskProgress.percentage;
+
+    // Risk analysis logic - simplified to 3 levels
+    let risk = 'good';
+    let level = 'success';
+    let message = 'Project is progressing well';
+    let recommendations = [];
+
+    // Critical risk: ALL phases failed AND tasks not completed
+    if (statusCounts.failed === totalPhases && taskCompletionRate < 100) {
+      risk = 'critical';
+      level = 'error';
+      message = 'Critical: All phases failed with incomplete tasks';
+      recommendations.push('Immediate intervention required - all phases have failed');
+      recommendations.push('Review project requirements and provide additional support');
+      recommendations.push('Consider project restructuring or timeline extension');
+    }
+    // Medium risk: Some failures or low completion rates
+    else if (failedRate > 0 || revisionRate >= 30 || (taskCompletionRate < 60 && completionRate < 50)) {
+      risk = 'medium';
+      level = 'warning';
+      message = 'Medium risk: Some concerns detected';
+      recommendations.push('Monitor progress closely');
+      recommendations.push('Address any blockers preventing completion');
+      recommendations.push('Provide support for struggling phases');
+    }
+    // Good: Project on track
+    else {
+      risk = 'good';
+      level = 'success';
+      message = 'Good: Project is on track';
+      recommendations.push('Continue current approach');
+      recommendations.push('Maintain quality standards');
+    }
+
+    return {
+      risk,
+      level,
+      message,
+      recommendations,
+      metrics: {
+        failedRate: Math.round(failedRate),
+        revisionRate: Math.round(revisionRate),
+        completionRate: Math.round(completionRate),
+        taskCompletionRate: Math.round(taskCompletionRate)
+      },
+      statusCounts
+    };
+  };
+
   const taskProgress = calculateTaskProgress();
   const phaseProgress = calculatePhaseProgress();
   const overallProgress = calculateOverallProgress();
+  const projectHealth = analyzeProjectHealth();
 
   // Get progress color based on percentage
   const getProgressColor = (percentage) => {
@@ -161,11 +248,28 @@ const ProjectProgressBar = ({ project, projectId }) => {
               <ProjectOutlined className="h-6 w-6 text-[#618264]" />
             </div>
             <div>
-              <Title level={4} className="!mb-1" style={{ color: '#618264' }}>
-                Project Progress
-              </Title>
+              <div className="flex items-center space-x-3">
+                <Title level={4} className="!mb-1" style={{ color: '#618264' }}>
+                  Project Progress
+                </Title>
+                <Badge 
+                  status={projectHealth.level === 'error' ? 'error' : 
+                          projectHealth.level === 'warning' ? 'warning' : 
+                          projectHealth.level === 'success' ? 'success' : 'processing'}
+                  text={
+                    <span className={`text-xs font-medium ${
+                      projectHealth.level === 'error' ? 'text-red-600' :
+                      projectHealth.level === 'warning' ? 'text-yellow-600' :
+                      projectHealth.level === 'success' ? 'text-green-600' :
+                      'text-blue-600'
+                    }`}>
+                      {projectHealth.risk.toUpperCase()} RISK
+                    </span>
+                  }
+                />
+              </div>
               <Text type="secondary" className="text-sm">
-                Overall completion rate for this project
+                Overall completion rate and project health analysis
               </Text>
             </div>
           </div>
@@ -193,6 +297,33 @@ const ProjectProgressBar = ({ project, projectId }) => {
             </div>
           </div>
         </div>
+
+        {/* Project Health Analysis Alert */}
+        <Alert
+          message={projectHealth.message}
+          description={
+            <div className="space-y-2">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
+                <div>
+                  <span className="font-medium">Failed Phases:</span> {projectHealth.metrics.failedRate}%
+                </div>
+                <div>
+                  <span className="font-medium">Revisions Needed:</span> {projectHealth.metrics.revisionRate}%
+                </div>
+              </div>
+            
+            </div>
+          }
+          type={projectHealth.level}
+          showIcon
+          icon={
+            projectHealth.level === 'error' ? <ExclamationCircleOutlined /> :
+            projectHealth.level === 'warning' ? <WarningOutlined /> :
+            projectHealth.level === 'success' ? <CheckCircleOutlined /> :
+            <InfoCircleOutlined />
+          }
+          className="mb-4"
+        />
 
         {/* Overall Progress Bar */}
         <div className="space-y-2">

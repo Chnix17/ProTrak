@@ -88,7 +88,8 @@ const TeacherPhaseWorkspaceModal = ({ isOpen, onClose, phase, projectId, onPhase
 
       const requestPayload = { 
         operation: 'fetchPhasesProjectDetail',
-        phase_main_id: parseInt(phase.phase_main_id)
+        phase_main_id: parseInt(phase.phase_main_id),
+        project_main_id: parseInt(projectId)
       };
       
       console.log('Sending request payload:', requestPayload);
@@ -152,7 +153,7 @@ const TeacherPhaseWorkspaceModal = ({ isOpen, onClose, phase, projectId, onPhase
     } finally {
       setIsLoading(false);
     }
-  }, [baseUrl, phase]);
+  }, [baseUrl, phase, isOpen, projectId]);
 
   useEffect(() => {
     if (isOpen && phase) {

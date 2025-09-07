@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FiLayers, FiCheckCircle, FiClock, FiAlertCircle, FiBriefcase, FiTrendingUp, FiCalendar, FiUsers } from 'react-icons/fi';
+import { FiLayers, FiCheckCircle, FiClock,FiTrendingUp,FiUsers } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from '../../components/sidebar';
 import { SecureStorage } from '../../utils/encryption';
@@ -29,8 +29,8 @@ const StudentDashboard = () => {
         const projectsResponse = await axios.post(
           `${baseUrl}student.php`,
           { 
-            operation: 'fetchStudentProjects',
-            studentId: SecureStorage.getLocalItem('user_id')
+            operation: 'fetchMyActiveProjects',
+            user_id: SecureStorage.getLocalItem('user_id')
           },
           { 
             headers: { 
@@ -46,8 +46,8 @@ const StudentDashboard = () => {
 
           // Calculate stats
           const totalProjects = projects.length;
-          const activeProjectsCount = projects.filter(p => p.status !== 'completed').length;
-          const completedProjectsCount = projects.filter(p => p.status === 'completed').length;
+          const activeProjectsCount = projects.filter(p => p.project_is_active === 1 && p.status_name !== 'Not Started' && p.status_name !== 'No Status').length;
+          const completedProjectsCount = projects.filter(p => p.status_name === 'Completed').length;
           
           setStats({
             totalProjects,
@@ -166,41 +166,7 @@ const StudentDashboard = () => {
             />
           </div>
 
-          {/* Quick Actions */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            <div 
-              onClick={() => navigate('/student/workspace')}
-              className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 cursor-pointer hover:shadow-md transition-all duration-200 group"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <div className="p-3 rounded-xl bg-primary-subtle group-hover:bg-primary-light transition-colors">
-                    <FiBriefcase className="w-6 h-6 text-primary" />
-                  </div>
-                  <div className="ml-4">
-                    <h3 className="text-lg font-semibold text-gray-900">My Workspaces</h3>
-                    <p className="text-gray-600 text-sm">Access all your project workspaces</p>
-                  </div>
-                </div>
-                <div className="text-primary opacity-0 group-hover:opacity-100 transition-opacity">
-                  →
-                </div>
-              </div>
-            </div>
-            
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-              <div className="flex items-center">
-                <div className="p-3 rounded-xl bg-blue-50">
-                  <FiCalendar className="w-6 h-6 text-blue-600" />
-                </div>
-                <div className="ml-4">
-                  <h3 className="text-lg font-semibold text-gray-900">Upcoming Deadlines</h3>
-                  <p className="text-gray-600 text-sm">Stay on track with your submissions</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
+     
           {/* Active Projects Section */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
             <div className="p-6 border-b border-gray-100">
@@ -216,61 +182,94 @@ const StudentDashboard = () => {
               </div>
             </div>
             
-            {activeProjects.length > 0 ? (
-              <div className="p-6">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {activeProjects.map((project) => (
-                    <div key={project.id} className="bg-gray-50 rounded-xl p-6 hover:bg-gray-100 transition-colors group">
-                      <div className="flex items-start justify-between mb-4">
-                        <div className="flex-1">
-                          <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                            {project.project_name}
-                          </h3>
-                          <div className="space-y-2">
-                            <div className="flex items-center">
-                              <span className="px-3 py-1 text-xs font-medium rounded-full bg-primary-subtle text-primary">
-                                {project.subject_name}
-                              </span>
+            <div className="overflow-x-auto">
+              {activeProjects.length > 0 ? (
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Project
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Description
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Members
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Status
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Created
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {activeProjects.map((project) => (
+                      <tr key={project.project_main_id} className="hover:bg-gray-50 transition-colors">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex flex-col">
+                            <div className="text-sm font-medium text-gray-900">
+                              {project.project_title}
                             </div>
-                            <div className="text-sm text-gray-600">
-                              <span className="font-medium">Teacher:</span> {project.teacher_name}
-                            </div>
-                            <div className="text-sm text-gray-600">
-                              <span className="font-medium">Semester:</span> {project.semester_name}
+                            <div className="text-sm text-gray-500">
+                              By {project.creator_name}
                             </div>
                           </div>
-                        </div>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <div className="text-xs text-gray-500">
-                          Last updated: 2 days ago
-                        </div>
-                        <button
-                          onClick={() => navigate(`/student/workspace/${project.id}`)}
-                          className="inline-flex items-center px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary-medium focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-colors"
-                        >
-                          Open Project
-                        </button>
-                      </div>
-                    </div>
-                  ))}
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="text-sm text-gray-900 max-w-xs truncate">
+                            {project.project_description}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          <div className="flex items-center">
+                            <FiUsers className="w-4 h-4 text-gray-400 mr-1" />
+                            {project.member_count}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+                            project.status_name === 'Completed' ? 'bg-green-50 text-green-600' :
+                            project.status_name === 'In Progress' ? 'bg-blue-50 text-blue-600' :
+                            project.status_name === 'Pending' ? 'bg-yellow-50 text-yellow-600' :
+                            'bg-gray-50 text-gray-600'
+                          }`}>
+                            {project.status_name || 'No Status'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {new Date(project.project_created_at).toLocaleDateString()}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          <button
+                            onClick={() => navigate(`/student/project-detail/${project.project_main_id}`)}
+                            className="inline-flex items-center px-3 py-1 bg-primary text-white text-xs font-medium rounded-md hover:bg-primary-medium focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-colors"
+                          >
+                            Open
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <div className="text-center py-12">
+                  <FiLayers className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No active projects</h3>
+                  <p className="text-gray-600">You don't have any active projects at the moment.</p>
+                  <button 
+                    onClick={() => navigate('/student/workspace')}
+                    className="inline-flex items-center px-6 py-3 bg-primary text-white font-medium rounded-lg hover:bg-primary-medium transition-colors mt-4"
+                  >
+                    Browse Available Projects
+                  </button>
                 </div>
-              </div>
-            ) : (
-              <div className="p-12 text-center">
-                <div className="mx-auto w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                  <FiLayers className="h-12 w-12 text-gray-400" />
-                </div>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No active projects</h3>
-                <p className="text-gray-500 mb-6">You don't have any active projects at the moment.</p>
-                <button 
-                  onClick={() => navigate('/student/workspace')}
-                  className="inline-flex items-center px-6 py-3 bg-primary text-white font-medium rounded-lg hover:bg-primary-medium transition-colors"
-                >
-                  Browse Available Projects
-                </button>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
       </div>

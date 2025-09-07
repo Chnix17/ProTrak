@@ -1,36 +1,111 @@
 import React, { useState, useEffect } from 'react';
-import { FiLayers, FiFolder, FiCheckCircle, FiClock, FiTrendingUp, FiCalendar, FiUsers, FiBriefcase } from 'react-icons/fi';
+import { FiLayers, FiFolder,  FiTrendingUp,  FiUsers, FiBriefcase } from 'react-icons/fi';
 import FacultySidebar from '../../components/sidebar';
-import { useNavigate } from 'react-router-dom';
 import { SecureStorage } from '../../utils/encryption';
 
 const TeacherDashboard = () => {
-  const navigate = useNavigate();
+ 
   const [stats, setStats] = useState({
     totalProjects: 0,
     masterProjects: 0,
     completedProjects: 0,
     inProgressProjects: 0
   });
+  const [recentProjects, setRecentProjects] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Simulated data fetch - replace with actual API call
+  // Fetch real data from API
   useEffect(() => {
     const fetchStats = async () => {
       try {
         setLoading(true);
-        // TODO: Replace with actual API call
-        setTimeout(() => {
-          setStats({
-            totalProjects: 24,
-            masterProjects: 5,
-            completedProjects: 18,
-            inProgressProjects: 6
-          });
+        const teacherId = SecureStorage.getLocalItem('user_id');
+        const apiUrl = SecureStorage.getLocalItem('url') + 'teacher.php';
+        
+        if (!teacherId) {
+          console.error('Teacher ID not found');
           setLoading(false);
-        }, 500);
+          return;
+        }
+
+        // Fetch project masters count
+        const masterProjectsResponse = await fetch(apiUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            operation: 'countProjectMastersByTeacher',
+            teacher_id: teacherId
+          })
+        });
+
+        // Fetch total projects count
+        const totalProjectsResponse = await fetch(apiUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            operation: 'countAllProjectsByTeacher',
+            teacher_id: teacherId
+          })
+        });
+
+        // Fetch recent projects
+        const recentProjectsResponse = await fetch(apiUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            operation: 'fetchRecentProjects',
+            teacher_id: teacherId,
+            limit: 6
+          })
+        });
+
+        const masterProjectsData = await masterProjectsResponse.json();
+        const totalProjectsData = await totalProjectsResponse.json();
+        const recentProjectsData = await recentProjectsResponse.json();
+
+        if (masterProjectsData.status === 'success' && totalProjectsData.status === 'success') {
+          setStats({
+            totalProjects: totalProjectsData.data.total_projects,
+            masterProjects: masterProjectsData.data.total_project_masters,
+            completedProjects: 0, // TODO: Add completed projects count logic
+            inProgressProjects: 0 // TODO: Add in-progress projects count logic
+          });
+        } else {
+          console.error('Error fetching stats:', masterProjectsData.message || totalProjectsData.message);
+          // Fallback to default values
+          setStats({
+            totalProjects: 0,
+            masterProjects: 0,
+            completedProjects: 0,
+            inProgressProjects: 0
+          });
+        }
+
+        // Set recent projects data
+        if (recentProjectsData.status === 'success') {
+          setRecentProjects(recentProjectsData.data);
+        } else {
+          console.error('Error fetching recent projects:', recentProjectsData.message);
+          setRecentProjects([]);
+        }
+        
+        setLoading(false);
       } catch (error) {
         console.error('Error fetching stats:', error);
+        // Fallback to default values
+        setStats({
+          totalProjects: 0,
+          masterProjects: 0,
+          completedProjects: 0,
+          inProgressProjects: 0
+        });
+        setRecentProjects([]);
         setLoading(false);
       }
     };
@@ -111,57 +186,10 @@ const TeacherDashboard = () => {
               color="text-primary-medium"
               bgColor="bg-primary-light"
             />
-            <StatCard 
-              icon={FiCheckCircle}
-              title="Completed"
-              value={stats.completedProjects}
-              color="text-primary-medium"
-              bgColor="bg-primary-light"
-            />
-            <StatCard 
-              icon={FiClock}
-              title="In Progress"
-              value={stats.inProgressProjects}
-              color="text-blue-600"
-              bgColor="bg-blue-50"
-            />
+        
           </div>
 
-          {/* Quick Actions */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            <div 
-              onClick={() => navigate('/faculty/workspace')}
-              className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 cursor-pointer hover:shadow-md transition-all duration-200 group"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <div className="p-3 rounded-xl bg-primary-subtle group-hover:bg-primary-light transition-colors">
-                    <FiBriefcase className="w-6 h-6 text-primary" />
-                  </div>
-                  <div className="ml-4">
-                    <h3 className="text-lg font-semibold text-gray-900">Project Workspaces</h3>
-                    <p className="text-gray-600 text-sm">Manage all your project workspaces</p>
-                  </div>
-                </div>
-                <div className="text-primary opacity-0 group-hover:opacity-100 transition-opacity">
-                  →
-                </div>
-              </div>
-            </div>
-            
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-              <div className="flex items-center">
-                <div className="p-3 rounded-xl bg-blue-50">
-                  <FiCalendar className="w-6 h-6 text-blue-600" />
-                </div>
-                <div className="ml-4">
-                  <h3 className="text-lg font-semibold text-gray-900">Project Deadlines</h3>
-                  <p className="text-gray-600 text-sm">Monitor upcoming project deadlines</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
+         
           {/* Projects Overview */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
             <div className="p-6 border-b border-gray-100">
@@ -172,56 +200,86 @@ const TeacherDashboard = () => {
                 </div>
                 <div className="flex items-center space-x-2">
                   <FiUsers className="w-5 h-5 text-gray-400" />
-                  <span className="text-sm text-gray-500">3 active projects</span>
+                  <span className="text-sm text-gray-500">{recentProjects.length} recent projects</span>
                 </div>
               </div>
             </div>
             
-            <div className="p-6">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {[...Array(3)].map((_, i) => (
-                  <div key={i} className="bg-gray-50 rounded-xl p-6 hover:bg-gray-100 transition-colors group">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex-1">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                          Project {i + 1}
-                        </h3>
-                        <div className="space-y-2">
+            <div className="overflow-x-auto">
+              {recentProjects.length > 0 ? (
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Project
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Master Project
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Members
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Status
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Created
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {recentProjects.map((project) => (
+                      <tr key={project.project_main_id} className="hover:bg-gray-50 transition-colors">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex flex-col">
+                            <div className="text-sm font-medium text-gray-900">
+                              {project.project_title}
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              By {project.creator_name}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex flex-col">
+                            <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-primary-subtle text-primary w-fit">
+                              {project.master_project.code || 'N/A'}
+                            </span>
+                            <div className="text-sm text-gray-500 mt-1">
+                              {project.master_project.title}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                           <div className="flex items-center">
-                            <span className="px-3 py-1 text-xs font-medium rounded-full bg-primary-subtle text-primary">
-                              Computer Science
-                            </span>
+                            <FiUsers className="w-4 h-4 text-gray-400 mr-1" />
+                            {project.member_count}
                           </div>
-                          <div className="text-sm text-gray-600">
-                            <span className="font-medium">Students:</span> 15 enrolled
-                          </div>
-                          <div className="text-sm text-gray-600">
-                            <span className="font-medium">Status:</span> 
-                            <span className={`ml-1 px-2 py-1 text-xs font-medium rounded-full ${
-                              i === 0 ? 'bg-blue-50 text-blue-600' : 
-                              i === 1 ? 'bg-yellow-50 text-yellow-600' : 
-                              'bg-green-50 text-green-600'
-                            }`}>
-                              {i === 0 ? 'In Progress' : i === 1 ? 'Needs Review' : 'Completed'}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div className="text-xs text-gray-500">
-                        Last updated: 2 days ago
-                      </div>
-                      <button
-                        onClick={() => navigate(`/faculty/workspace/project/${i + 1}`)}
-                        className="inline-flex items-center px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary-medium focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-colors"
-                      >
-                        View Project
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+                            project.status_name === 'Completed' ? 'bg-green-50 text-green-600' :
+                            project.status_name === 'In Progress' ? 'bg-blue-50 text-blue-600' :
+                            project.status_name === 'Pending' ? 'bg-yellow-50 text-yellow-600' :
+                            'bg-gray-50 text-gray-600'
+                          }`}>
+                            {project.status_name || 'No Status'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {new Date(project.project_created_at).toLocaleDateString()}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <div className="text-center py-12">
+                  <FiBriefcase className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No recent projects</h3>
+                  <p className="text-gray-600">You haven't created any projects yet.</p>
+                </div>
+              )}
             </div>
           </div>
         </div>

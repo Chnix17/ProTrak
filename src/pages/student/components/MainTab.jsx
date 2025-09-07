@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   PlayIcon, 
   CheckCircleIcon, 
@@ -23,12 +23,20 @@ const MainTab = ({ project, projectId, onProjectUpdate }) => {
   const [selectedPhase, setSelectedPhase] = useState(null);
   const baseUrl = SecureStorage.getLocalItem("url");
 
-  const fetchPhases = async () => {
-    // Use phases from the project data passed from parent
-    if (project && project.phases) {
-      setPhases(project.phases);
+  const fetchPhases = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      // Use phases from the project data passed from parent
+      if (project && project.phases) {
+        setPhases(project.phases);
+      }
+    } catch (error) {
+      console.error('Error fetching phases:', error);
+      toast.error('Failed to load phases');
+    } finally {
+      setIsLoading(false);
     }
-  };
+  }, [project]);
 
   const handleStartPhase = (phase) => {
     setSelectedPhase(phase);
@@ -77,12 +85,16 @@ const MainTab = ({ project, projectId, onProjectUpdate }) => {
   const getPhaseStatusIcon = (status) => {
     switch (status.toLowerCase()) {
       case 'completed':
+      case 'approved':
       case 'passed':
         return <CheckCircleIcon className="h-5 w-5 text-green-500" />;
       case 'failed':
         return <ExclamationTriangleIcon className="h-5 w-5 text-red-500" />;
       case 'in progress':
         return <PlayIcon className="h-5 w-5 text-blue-500" />;
+      case 'under review':
+        return <EyeIcon className="h-5 w-5 text-purple-500" />;
+      case 'revision nedded':
       case 'needs revision':
         return <ExclamationTriangleIcon className="h-5 w-5 text-yellow-500" />;
       case 'not started':
@@ -94,12 +106,16 @@ const MainTab = ({ project, projectId, onProjectUpdate }) => {
   const getPhaseStatusColor = (status) => {
     switch (status.toLowerCase()) {
       case 'completed':
+      case 'approved':
       case 'passed':
         return 'bg-green-100 text-green-800 border-green-200';
       case 'failed':
         return 'bg-red-100 text-red-800 border-red-200';
       case 'in progress':
         return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'under review':
+        return 'bg-purple-100 text-purple-800 border-purple-200';
+      case 'revision nedded':
       case 'needs revision':
         return 'bg-yellow-100 text-yellow-800 border-yellow-200';
       case 'not started':
@@ -108,9 +124,14 @@ const MainTab = ({ project, projectId, onProjectUpdate }) => {
     }
   };
 
+  const canOpenPhase = (status) => {
+    const openableStatuses = ['in progress', 'completed', 'revision nedded', 'needs revision', 'approved', 'passed', 'failed', 'under review'];
+    return openableStatuses.includes(status.toLowerCase());
+  };
+
   useEffect(() => {
     fetchPhases();
-  }, [project]);
+  }, [project, fetchPhases]);
 
   if (isLoading) {
     return (
@@ -167,7 +188,8 @@ const MainTab = ({ project, projectId, onProjectUpdate }) => {
             const isCompleted = phase.status.toLowerCase() === 'completed' || phase.status.toLowerCase() === 'approved' || phase.status.toLowerCase() === 'passed';
             const isFailed = phase.status.toLowerCase() === 'failed';
             const isInProgress = phase.status.toLowerCase() === 'in progress';
-            const needsRevision = phase.status.toLowerCase() === 'needs revision';
+            const isUnderReview = phase.status.toLowerCase() === 'under review';
+            const needsRevision = phase.status.toLowerCase() === 'revision nedded' || phase.status.toLowerCase() === 'needs revision';
             const isNotStarted = phase.status.toLowerCase() === 'not started';
             
             return (
@@ -180,6 +202,7 @@ const MainTab = ({ project, projectId, onProjectUpdate }) => {
                   isCompleted ? 'border-green-500 bg-green-50/50' :
                   isFailed ? 'border-red-500 bg-red-50/50' :
                   needsRevision ? 'border-yellow-500 bg-yellow-50/50' :
+                  isUnderReview ? 'border-purple-500 bg-purple-50/50' :
                   isInProgress ? 'border-primary bg-primary-subtle/30' :
                   'border-gray-300 bg-gray-50/50'
                 }`}>
@@ -190,6 +213,7 @@ const MainTab = ({ project, projectId, onProjectUpdate }) => {
                           isCompleted ? 'bg-green-100' :
                           isFailed ? 'bg-red-100' :
                           needsRevision ? 'bg-yellow-100' :
+                          isUnderReview ? 'bg-purple-100' :
                           isInProgress ? 'bg-primary-subtle' :
                           'bg-gray-100'
                         }`}>
@@ -203,10 +227,16 @@ const MainTab = ({ project, projectId, onProjectUpdate }) => {
                             <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getPhaseStatusColor(phase.status)}`}>
                               {phase.status}
                             </span>
-                            {needsRevision && (
+                            {(needsRevision || isUnderReview) && (
                               <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
                                 <ExclamationTriangleIcon className="h-3 w-3 mr-1" />
-                                Action Required
+                                {needsRevision ? 'Action Required' : 'Under Review'}
+                              </span>
+                            )}
+                            {isUnderReview && (
+                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                                <EyeIcon className="h-3 w-3 mr-1" />
+                                Under Review
                               </span>
                             )}
                             {isCompleted && (
@@ -260,7 +290,7 @@ const MainTab = ({ project, projectId, onProjectUpdate }) => {
                         </button>
                       )}
                       
-                      {(isInProgress || isCompleted || needsRevision || isFailed) && (
+                      {canOpenPhase(phase.status) && (
                         <button
                           onClick={() => {
                             setSelectedPhase(phase);
@@ -273,11 +303,13 @@ const MainTab = ({ project, projectId, onProjectUpdate }) => {
                               ? 'text-white bg-red-600 hover:bg-red-700 focus:ring-red-500'
                               : needsRevision
                               ? 'text-white bg-yellow-600 hover:bg-yellow-700 focus:ring-yellow-500'
+                              : isUnderReview
+                              ? 'text-white bg-purple-600 hover:bg-purple-700 focus:ring-purple-500'
                               : 'text-white bg-primary hover:bg-primary-medium focus:ring-primary'
                           }`}
                         >
                           <EyeIcon className="-ml-1 mr-2 h-4 w-4" />
-                          {isFailed ? 'View Failed Phase' : needsRevision ? 'Review Feedback' : isCompleted ? 'View Results' : 'Open Workspace'}
+                          {isFailed ? 'View Failed Phase' : needsRevision ? 'Review Feedback' : isCompleted ? 'View Results' : isUnderReview ? 'View Phase' : 'Open Workspace'}
                         </button>
                       )}
                     </div>
