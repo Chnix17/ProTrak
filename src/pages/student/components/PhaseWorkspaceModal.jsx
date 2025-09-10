@@ -79,7 +79,8 @@ const PhaseWorkspaceModal = ({ isOpen, onClose, phase, projectId }) => {
 
       const requestPayload = { 
         operation: 'fetchPhasesProjectDetail',
-        phase_main_id: parseInt(phase.phase_main_id)
+        phase_main_id: parseInt(phase.phase_main_id),
+        project_main_id: parseInt(projectId)
       };
       
       console.log('Sending request payload:', requestPayload);

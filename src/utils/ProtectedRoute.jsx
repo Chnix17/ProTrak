@@ -3,27 +3,37 @@ import { Navigate } from 'react-router-dom';
 import NotAuthorize from '../components/NotAuthorize';
 import { SecureStorage } from './encryption';
 
-const ProtectedRoute = ({ children, allowedRoles, requiredDepartment }) => {
+const ProtectedRoute = ({ children, allowedRoles }) => {
     const [showModal, setShowModal] = useState(false);
     const [shouldNavigate, setShouldNavigate] = useState(false);
     // Check both regular localStorage and SecureStorage for backward compatibility
-    const isLoggedIn = SecureStorage.getLocalItem('loggedIn') === 'true' || SecureStorage.getSessionItem('loggedIn');
-    const userRole = SecureStorage.getLocalItem('user_level');
+    const isLoggedIn = SecureStorage.getLocalItem('loggedIn') === 'true' || SecureStorage.getLocalItem('loggedIn');
+    const userRole = SecureStorage.getLocalItem('user_level_name') || SecureStorage.getLocalItem('user_level');
     // Fallback to numeric role id when role name is missing
-    const userLevelId = SecureStorage.getLocalItem('user_level_id') || SecureStorage.getSessionItem('user_level_id');
-    // Minimal mapping to ensure Admin access even if only the id is present
-    const roleMap = { '1': 'Admin' };
+    const userLevelId = SecureStorage.getLocalItem('user_level_id') || SecureStorage.getLocalItem('user_level_id');
+    // Complete mapping for all user level IDs to role names
+    const roleMap = { 
+        '1': 'Administrator',
+        '2': 'Faculty Instructor', 
+        '3': 'Student'
+    };
     const resolvedUserRole = userRole || roleMap[String(userLevelId)] || '';
-    const userDepartment = SecureStorage.getSessionItem('Department Name');
+    console.log('Resolved User Role:', resolvedUserRole);
+
+    // Debug logging to help identify the issue
+    console.log('ProtectedRoute Debug:', {
+        isLoggedIn,
+        userRole,
+        userLevelId,
+        resolvedUserRole,
+        allowedRoles
+    });
 
     useEffect(() => {
-        if (
-            (allowedRoles && !allowedRoles.includes(resolvedUserRole)) ||
-            (requiredDepartment && userDepartment !== requiredDepartment)
-        ) {
+        if (allowedRoles && !allowedRoles.includes(resolvedUserRole)) {
             setShowModal(true);
         }
-    }, [allowedRoles, resolvedUserRole, requiredDepartment, userDepartment]);
+    }, [allowedRoles, resolvedUserRole]);
 
     const handleModalClose = () => {
         setShowModal(false);
@@ -38,18 +48,14 @@ const ProtectedRoute = ({ children, allowedRoles, requiredDepartment }) => {
     }
 
     const getRedirectPath = () => {
-        if (resolvedUserRole === 'Super Admin' || resolvedUserRole === 'Admin') return '/adminDashboard';
-        if (resolvedUserRole === 'Personnel') return '/personnelDashboard';
-        if (resolvedUserRole === 'Dean' || resolvedUserRole === 'Secretary' || resolvedUserRole === 'Department Head') return '/Department/Dashboard';
-        if (resolvedUserRole === 'Faculty/Staff' || resolvedUserRole === 'School Head' || resolvedUserRole === 'SBO PRESIDENT' || resolvedUserRole === 'CSG PRESIDENT') return '/Faculty/Dashboard';
-        if (resolvedUserRole === 'Driver') return '/Driver/Dashboard';
+        if (resolvedUserRole === 'Administrator' || resolvedUserRole === 'Admin') return '/admin/dashboard';
+        if (resolvedUserRole === 'Faculty Instructor' ) return '/teacher/dashboard';
+        if (resolvedUserRole === 'Student') return '/student/dashboard';
+        if (resolvedUserRole === 'Staff') return '/admin/dashboard';
         return '/login';
     };
 
-    if (
-        (allowedRoles && !allowedRoles.includes(resolvedUserRole)) ||
-        (requiredDepartment && userDepartment !== requiredDepartment)
-    ) {
+    if (allowedRoles && !allowedRoles.includes(resolvedUserRole)) {
         return (
             <>
                 <NotAuthorize open={showModal} onClose={handleModalClose} />

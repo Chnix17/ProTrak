@@ -86,7 +86,7 @@ const Create_Modal = ({
             const jsonData = {
                 operation: 'saveUser',
                 json: {
-                    users_title_id: values.users_title ? (titles.find(t => t.title_name === values.users_title)?.title_id ?? 1) : 1,
+                    users_title_id: values.users_title ? (titles.find(t => t.title_name === values.users_title)?.title_id ?? null) : null,
                     users_fname: values.users_firstname,
                     users_mname: values.users_middlename || "",
                     users_lname: values.users_lastname,

@@ -384,7 +384,10 @@ const TaskTab = ({ project, projectId, onTaskUpdate }) => {
             <span>{dayjs(record.project_end_date).format('MMM DD')}</span>
           </div>
           <div className="text-xs text-gray-400 mt-1">
-            {dayjs(record.project_end_date).diff(dayjs(), 'days')} days left
+            {(() => {
+              const daysLeft = dayjs(record.project_end_date).diff(dayjs(), 'days');
+              return daysLeft < 0 ? 'overdue' : `${daysLeft} days left`;
+            })()}
           </div>
         </div>
       ),

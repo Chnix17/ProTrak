@@ -596,6 +596,9 @@ const Projects = () => {
                         Members
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Current Phase
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Status
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -636,6 +639,19 @@ const Projects = () => {
                             <UserIcon className="h-3 w-3 mr-1" />
                             {project.member_count} members
                           </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {project.phase_name ? (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                              <ClockIcon className="h-3 w-3 mr-1" />
+                              {project.phase_name}
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                              <XCircleIcon className="h-3 w-3 mr-1" />
+                              No Phase
+                            </span>
+                          )}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           {project.status_name ? (

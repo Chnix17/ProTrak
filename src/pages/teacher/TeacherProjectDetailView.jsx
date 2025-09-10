@@ -6,7 +6,9 @@ import {
   ClipboardDocumentListIcon,
   Squares2X2Icon,
   SparklesIcon,
-  UserGroupIcon
+  UserGroupIcon,
+  CheckCircleIcon,
+  XCircleIcon,
 } from '@heroicons/react/24/outline';
 import { toast } from 'sonner';
 import { SecureStorage } from '../../utils/encryption';
@@ -17,6 +19,7 @@ import MembersTab from './components/MembersTab';
 import TaskTab from './components/TaskTab';
 import ProjectProgressBar from './components/ProjectProgressBar';
 
+
 const TeacherProjectDetailView = () => {
   const { projectMasterId, projectId } = useParams();
   const navigate = useNavigate();
@@ -24,6 +27,7 @@ const TeacherProjectDetailView = () => {
   const [project, setProject] = useState(null);
   const [masterProject, setMasterProject] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const baseUrl = SecureStorage.getLocalItem("url");
 
   const fetchProjectDetails = useCallback(async () => {
@@ -63,6 +67,89 @@ const TeacherProjectDetailView = () => {
       setIsLoading(false);
     }
   }, [projectId, baseUrl]);
+
+  // Check if all phases are completed
+  const areAllPhasesCompleted = useCallback(() => {
+    if (!project?.phases || project.phases.length === 0) {
+      console.log('No phases found or empty phases array');
+      return false;
+    }
+    const allCompleted = project.phases.every(phase => {
+      const status = phase.status?.toLowerCase();
+      const isComplete = status === 'completed' || status === 'approved' || status === 'passed';
+      console.log(`Phase ${phase.phase_name || 'unnamed'}: status=${status}, isComplete=${isComplete}`);
+      return isComplete;
+    });
+    console.log('All phases completed:', allCompleted);
+    return allCompleted;
+  }, [project]);
+
+  // Handle project status update (complete/fail)
+  const handleUpdateProjectStatus = async (isCompleted) => {
+    if (!areAllPhasesCompleted()) {
+      toast.error('All phases must be completed before updating project status');
+      return;
+    }
+
+    try {
+      setIsUpdatingStatus(true);
+      const token = SecureStorage.getLocalItem('token');
+      const userId = SecureStorage.getLocalItem('user_id');
+      
+      // Log the data being sent
+      const requestData = {
+        operation: 'updateCompleteStatus',
+        project_status_project_main_id: parseInt(projectId),
+        is_completed: isCompleted,
+        user_id: userId
+      };
+      
+      console.log('Sending request to update project status:', requestData);
+      
+      const response = await axios.post(
+        `${baseUrl}teacher.php`,
+        JSON.stringify(requestData), // Ensure data is stringified
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          }
+        }
+      );
+
+      console.log('Response from server:', response.data);
+
+      if (response.data && response.data.status === 'success') {
+        toast.success(`Project marked as ${isCompleted ? 'completed' : 'failed'} successfully`);
+        fetchProjectDetails(); // Refresh project data
+      } else {
+        const errorMsg = response.data?.message || 'Failed to update project status';
+        console.error('API Error:', errorMsg);
+        throw new Error(errorMsg);
+      }
+    } catch (error) {
+      console.error('Error updating project status:', error);
+      if (error.response) {
+        console.error('Error response data:', error.response.data);
+        console.error('Error status:', error.response.status);
+      }
+      toast.error(`Failed to update project status: ${error.message || 'Unknown error'}`);
+    } finally {
+      setIsUpdatingStatus(false);
+    }
+  };
+
+  // Show confirmation dialog for status update
+  const showStatusUpdateConfirm = (isCompleted) => {
+    console.log('showStatusUpdateConfirm called with isCompleted:', isCompleted);
+    
+    const confirmMessage = `Are you sure you want to mark this project as ${isCompleted ? 'completed' : 'failed'}?`;
+    const userConfirmed = window.confirm(confirmMessage);
+    
+    if (userConfirmed) {
+      handleUpdateProjectStatus(isCompleted);
+    }
+  };
 
   useEffect(() => {
     fetchProjectDetails();
@@ -151,6 +238,47 @@ const TeacherProjectDetailView = () => {
                           Teacher Review Mode
                         </span>
                       </div>
+                      {/* Project Status Actions */}
+                      {console.log('Rendering status buttons. Current status:', project?.status_master_name)}
+                      {areAllPhasesCompleted() && project?.status_master_name?.toLowerCase() !== 'completed' && 
+                        project?.status_master_name?.toLowerCase() !== 'failed' && (
+                        <div className="flex items-center space-x-2">
+                          <div className="w-1 h-1 bg-white/60 rounded-full"></div>
+                          <div className="flex space-x-2">
+                            <button
+                              onClick={() => showStatusUpdateConfirm(true)}
+                              disabled={isUpdatingStatus}
+                              className="text-sm bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-full font-medium flex items-center space-x-1 transition-colors disabled:opacity-50"
+                            >
+                              <CheckCircleIcon className="h-3.5 w-3.5" />
+                              <span>Mark as Completed</span>
+                            </button>
+                            <button
+                              onClick={() => showStatusUpdateConfirm(false)}
+                              disabled={isUpdatingStatus}
+                              className="text-sm bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-full font-medium flex items-center space-x-1 transition-colors disabled:opacity-50"
+                            >
+                              <XCircleIcon className="h-3.5 w-3.5" />
+                              <span>Mark as Failed</span>
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                      {project?.status_master_name && (
+                        <div className="flex items-center space-x-2">
+                          <div className="w-1 h-1 bg-white/60 rounded-full"></div>
+                          <span className={`text-sm font-medium px-3 py-1.5 rounded-full flex items-center space-x-1.5 
+                            ${
+                              project.status_master_name.toLowerCase() === 'completed' ? 'bg-green-100 text-green-800' :
+                              project.status_master_name.toLowerCase() === 'in progress' ? 'bg-blue-100 text-blue-800' :
+                              project.status_master_name.toLowerCase() === 'pending' ? 'bg-amber-100 text-amber-800' :
+                              'bg-white/20 text-white'
+                            }`}>
+                            <CheckCircleIcon className="h-3.5 w-3.5" />
+                            <span className="font-semibold">{project.status_master_name}</span>
+                          </span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>

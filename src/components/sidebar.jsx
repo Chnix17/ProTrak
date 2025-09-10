@@ -14,11 +14,13 @@ import {
 } from '@heroicons/react/24/outline';
 import { SecureStorage } from '../utils/encryption';
 import { useSidebar } from '../contexts/SidebarContext';
+import ProfileModal from './ProfileModal';
 
 const Sidebar = () => {
   const { isOpen, isCollapsed, isMobile, toggleSidebar, closeSidebar } = useSidebar();
   const [masterFilesOpen, setMasterFilesOpen] = useState(false);
   const [userRole, setUserRole] = useState('');
+  const [profileModalVisible, setProfileModalVisible] = useState(false);
   const location = useLocation();
   // const navigate = useNavigate();
 
@@ -92,6 +94,12 @@ const Sidebar = () => {
       href: '/admin/dashboard',
       icon: HomeIcon,
       current: isActiveRoute('/admin/dashboard')
+    },
+    {
+      name: 'Projects',
+      href: '/admin/projects',
+      icon: FolderIcon,
+      current: isActiveRoute('/admin/projects')
     }
   ];
 
@@ -330,7 +338,11 @@ const Sidebar = () => {
         {/* User profile section */}
         <div className="absolute bottom-0 w-full p-4 border-t border-gray-100 bg-gray-50/50">
           {/* User Info Display */}
-          <div className="flex items-center p-3 bg-white rounded-xl shadow-sm border border-gray-200 mb-3">
+          <button
+            onClick={() => setProfileModalVisible(true)}
+            className="w-full flex items-center p-3 bg-white rounded-xl shadow-sm border border-gray-200 mb-3 hover:bg-gray-50 hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+            title={isCollapsed ? 'View Profile' : ''}
+          >
             <div className="flex-shrink-0">
               {/* Default Avatar */}
               <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary to-primary-dark flex items-center justify-center shadow-sm">
@@ -338,7 +350,7 @@ const Sidebar = () => {
               </div>
             </div>
             {!isCollapsed && (
-              <div className="ml-3 flex-1 min-w-0">
+              <div className="ml-3 flex-1 min-w-0 text-left">
                 <p className="text-sm font-semibold text-gray-800 truncate">
                   {(() => {
                     const firstname = SecureStorage.getLocalItem('firstname') || '';
@@ -351,7 +363,7 @@ const Sidebar = () => {
                 <p className="text-xs text-gray-500 truncate">{userRole}</p>
               </div>
             )}
-          </div>
+          </button>
           
           {/* Logout Button */}
           {!isCollapsed && (
@@ -367,6 +379,11 @@ const Sidebar = () => {
         </div>
       </div>
 
+      {/* Profile Modal */}
+      <ProfileModal 
+        visible={profileModalVisible} 
+        onClose={() => setProfileModalVisible(false)} 
+      />
     </>
   );
 };

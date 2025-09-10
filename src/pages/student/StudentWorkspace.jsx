@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   EyeIcon,
   DocumentTextIcon,
@@ -6,8 +6,9 @@ import {
   XMarkIcon,
   MagnifyingGlassIcon,
   CalendarIcon,
-  UsersIcon,
-  CodeBracketIcon
+  CodeBracketIcon,
+  ArchiveBoxIcon,
+  ChartBarIcon
 } from '@heroicons/react/24/outline';
 import { toast } from 'sonner';
 import { SecureStorage } from '../../utils/encryption';
@@ -23,10 +24,12 @@ const StudentWorkspace = () => {
   const [joinCode, setJoinCode] = useState('');
   const [projectDetails, setProjectDetails] = useState(null);
   const [isValidating, setIsValidating] = useState(false);
+  const [viewMode, setViewMode] = useState('active'); // 'active' or 'archived'
+  const [searchTerm, setSearchTerm] = useState('');
   const baseUrl = SecureStorage.getLocalItem("url");
 
   // Fetch student's joined workspaces
-  const fetchStudentProjects = async () => {
+  const fetchStudentProjects = useCallback(async () => {
     try {
       setIsLoading(true);
       const token = SecureStorage.getLocalItem('token');
@@ -53,7 +56,7 @@ const StudentWorkspace = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [baseUrl]);
 
   // Validate project code
   const validateProjectCode = async (e) => {
@@ -142,7 +145,7 @@ const StudentWorkspace = () => {
 
   useEffect(() => {
     fetchStudentProjects();
-  }, []);
+  }, [fetchStudentProjects]);
 
   if (isLoading) {
     return (
@@ -182,27 +185,89 @@ const StudentWorkspace = () => {
             </div>
           </div>
 
-          {/* Search and Filter Bar */}
-          <div className="mb-6">
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+          {/* View Mode Toggle and Search Bar */}
+          <div className="mb-4 sm:mb-6 space-y-3 sm:space-y-4">
+            {/* View Mode Toggle */}
+            <div className="bg-white rounded-lg sm:rounded-xl shadow-sm border border-gray-100 p-3 sm:p-4">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
-                <div className="relative flex-1 max-w-md">
-                  <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                  <input
-                    type="text"
-                    placeholder="Search workspaces..."
-                    className="pl-10 pr-4 py-2 w-full border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
-                  />
+                <div className="flex bg-gray-100 rounded-lg p-1">
+                  <button
+                    onClick={() => setViewMode('active')}
+                    className={`flex-1 sm:flex-none px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium rounded-md transition-all duration-200 ${
+                      viewMode === 'active'
+                        ? 'bg-white text-primary shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    <DocumentTextIcon className="h-4 w-4 mr-2 inline" />
+                    Active Projects
+                  </button>
+                  <button
+                    onClick={() => setViewMode('archived')}
+                    className={`flex-1 sm:flex-none px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium rounded-md transition-all duration-200 ${
+                      viewMode === 'archived'
+                        ? 'bg-white text-primary shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    <ArchiveBoxIcon className="h-4 w-4 mr-2 inline" />
+                    Archived Projects
+                  </button>
                 </div>
-                <div className="flex items-center space-x-2 text-sm text-gray-600">
-                  <UsersIcon className="h-4 w-4" />
-                  <span>{projects.length} workspaces</span>
+                <div className="flex items-center space-x-2 text-xs sm:text-sm text-gray-500 bg-gray-100 rounded-full px-3 py-1">
+                  <ChartBarIcon className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <span>{(() => {
+                    const filteredCount = projects.filter(project => {
+                      const projectData = project.project;
+                      const matchesViewMode = viewMode === 'active' 
+                        ? projectData.project_is_active === 1 || projectData.project_is_active === '1'
+                        : projectData.project_is_active === 0 || projectData.project_is_active === '0';
+                      
+                      const matchesSearch = searchTerm === '' || 
+                        projectData.project_title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                        projectData.project_code.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                        (projectData.project_description && projectData.project_description.toLowerCase().includes(searchTerm.toLowerCase()));
+                      
+                      return matchesViewMode && matchesSearch;
+                    }).length;
+                    return `${filteredCount} project${filteredCount !== 1 ? 's' : ''}`;
+                  })()}</span>
                 </div>
+              </div>
+            </div>
+            
+            {/* Search Bar */}
+            <div className="bg-white rounded-lg sm:rounded-xl shadow-sm border border-gray-100 p-3 sm:p-4">
+              <div className="relative">
+                <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder={`Search ${viewMode} projects...`}
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-9 sm:pl-10 pr-3 sm:pr-4 py-2 w-full border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary text-sm sm:text-base"
+                />
               </div>
             </div>
           </div>
 
-          {projects.length === 0 ? (
+          {/* Filter projects based on view mode and search term */}
+          {(() => {
+            const filteredProjects = projects.filter(project => {
+              const projectData = project.project;
+              const matchesViewMode = viewMode === 'active' 
+                ? projectData.project_is_active === 1 || projectData.project_is_active === '1'
+                : projectData.project_is_active === 0 || projectData.project_is_active === '0';
+              
+              const matchesSearch = searchTerm === '' || 
+                projectData.project_title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                projectData.project_code.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                (projectData.project_description && projectData.project_description.toLowerCase().includes(searchTerm.toLowerCase()));
+              
+              return matchesViewMode && matchesSearch;
+            });
+
+            return filteredProjects.length === 0 ? (
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
               <div className="mx-auto w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-6">
                 <DocumentTextIcon className="h-12 w-12 text-gray-400" />
@@ -219,9 +284,33 @@ const StudentWorkspace = () => {
                 Join Your First Workspace
               </button>
             </div>
-          ) : (
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 xl:grid-cols-3">
-              {projects.map((item) => (
+            ) : (
+              <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 xl:grid-cols-3">
+                {filteredProjects.length === 0 ? (
+                  <div className="col-span-full text-center py-8">
+                    <DocumentTextIcon className="mx-auto h-12 w-12 text-gray-400" />
+                    <h3 className="mt-2 text-sm font-medium text-gray-900">No {viewMode} projects found</h3>
+                    <p className="mt-1 text-sm text-gray-500">
+                      {searchTerm 
+                        ? 'Try adjusting your search or filter criteria.'
+                        : viewMode === 'active'
+                          ? 'Join a workspace to get started.'
+                          : 'No archived projects found.'}
+                    </p>
+                    {viewMode === 'active' && !searchTerm && (
+                      <div className="mt-6">
+                        <button
+                          onClick={() => setShowJoinModal(true)}
+                          className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary hover:bg-primary-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+                        >
+                          <UserPlusIcon className="-ml-1 mr-2 h-5 w-5" />
+                          Join Workspace
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  filteredProjects.map((item) => (
                 <div key={item.student_joined_id} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-all duration-200 group">
                   <div className="p-6">
                     <div className="flex items-start justify-between mb-4">
@@ -260,9 +349,11 @@ const StudentWorkspace = () => {
                     </div>
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
+                  ))
+                )}
+              </div>
+            );
+          })()}
         </div>
       </div>
 

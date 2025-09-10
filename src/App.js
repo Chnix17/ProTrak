@@ -6,6 +6,7 @@ import NotFound from './components/NotFound';
 import Layout from './components/Layout';
 import { SecureStorage } from './utils/encryption';
 import { SidebarProvider } from './contexts/SidebarContext';
+import ProtectedRoute from './utils/ProtectedRoute';
 import Logins from './pages/auth/Logins';
 import AdminDashboard from './pages/admin/admindashboard';
 import AcademicDashboard from './pages/admin/Master Files/AcademicYear';
@@ -18,6 +19,7 @@ import StudentProjectView from './pages/student/StudentProjectView';
 import ProjectDetailView from './pages/student/ProjectDetailView';
 import TeacherProjectDetailView from './pages/teacher/TeacherProjectDetailView';
 import User from './pages/admin/Master Files/User';
+import AdminProjects from './pages/admin/AdminProjects';
 
 
 
@@ -72,6 +74,7 @@ const App = () => {
             '/admin/dashboard',
             '/admin/academic',
             '/admin/users',
+            '/admin/projects',
             '/teacher/dashboard',
             '/student/dashboard',
             '/teacher/workspace',
@@ -105,18 +108,72 @@ const App = () => {
                             <Route path="/" element={<Navigate to="/login" replace />} />
                             <Route path="/login" element={<Logins />} />
                             {/* <Route path="/register" element={<Register />} /> */}
-                            <Route path="/admin/dashboard" element={<AdminDashboard />} />
-                            <Route path="/admin/academic" element={<AcademicDashboard/>}/>
-                            <Route path="/student/dashboard" element={<StudentDashbaord/>}/>
-                            <Route path="/teacher/dashboard" element={<TeacherDashboard/>}/>
-                            <Route path="/teacher/workspace" element={<FacultyWorkspace/>}/>
-                            <Route path="/teacher/projects" element={<Projects/>}/>
-                            <Route path="/teacher/project-detail/:projectMasterId/:projectId" element={<TeacherProjectDetailView/>}/>
-                            {/* <Route path="/faculty/workspace/projects" element={<FacultyProjects/>}/> */}
-                            <Route path="/student/workspace" element={<StudentWorkspace/>} />
-                            <Route path="/student/project/:projectMasterId" element={<StudentProjectView/>} />
-                            <Route path="/student/project/:projectMasterId/:projectId" element={<ProjectDetailView/>} />
-                            <Route path="/admin/users" element={<User />} />
+                            
+                            {/* Admin Protected Routes */}
+                            <Route path="/admin/dashboard" element={
+                                <ProtectedRoute allowedRoles={['administrator', 'admin']}>
+                                    <AdminDashboard />
+                                </ProtectedRoute>
+                            } />
+                            <Route path="/admin/academic" element={
+                                <ProtectedRoute allowedRoles={['administrator', 'admin']}>
+                                    <AcademicDashboard/>
+                                </ProtectedRoute>
+                            }/>
+                            <Route path="/admin/users" element={
+                                <ProtectedRoute allowedRoles={['administrator', 'admin']}>
+                                    <User />
+                                </ProtectedRoute>
+                            } />
+                            <Route path="/admin/projects" element={
+                                <ProtectedRoute allowedRoles={['administrator', 'admin']}>
+                                    <AdminProjects />
+                                </ProtectedRoute>
+                            } />
+                            
+                            {/* Faculty/Teacher Protected Routes */}
+                            <Route path="/teacher/dashboard" element={
+                                <ProtectedRoute allowedRoles={['faculty instructor']}>
+                                    <TeacherDashboard/>
+                                </ProtectedRoute>
+                            }/>
+                            <Route path="/teacher/workspace" element={
+                                <ProtectedRoute allowedRoles={['faculty instructor']}>
+                                    <FacultyWorkspace/>
+                                </ProtectedRoute>
+                            }/>
+                            <Route path="/teacher/projects" element={
+                                <ProtectedRoute allowedRoles={['faculty instructor']}>
+                                    <Projects/>
+                                </ProtectedRoute>
+                            }/>
+                            <Route path="/teacher/project-detail/:projectMasterId/:projectId" element={
+                                <ProtectedRoute allowedRoles={['faculty instructor']}>
+                                    <TeacherProjectDetailView/>
+                                </ProtectedRoute>
+                            }/>
+                            
+                            {/* Student Protected Routes */}
+                            <Route path="/student/dashboard" element={
+                                <ProtectedRoute allowedRoles={['student']}>
+                                    <StudentDashbaord/>
+                                </ProtectedRoute>
+                            }/>
+                            <Route path="/student/workspace" element={
+                                <ProtectedRoute allowedRoles={['student']}>
+                                    <StudentWorkspace/>
+                                </ProtectedRoute>
+                            } />
+                            <Route path="/student/project/:projectMasterId" element={
+                                <ProtectedRoute allowedRoles={['student']}>
+                                    <StudentProjectView/>
+                                </ProtectedRoute>
+                            } />
+                            <Route path="/student/project/:projectMasterId/:projectId" element={
+                                <ProtectedRoute allowedRoles={['student']}>
+                                    <ProjectDetailView/>
+                                </ProtectedRoute>
+                            } />
                         </Routes>
                     </Layout>
                 </div>
