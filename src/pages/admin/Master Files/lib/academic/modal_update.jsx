@@ -36,7 +36,7 @@ const Update_Modal = ({ show, onHide, fetchAcademicYears, academicYear, semester
         school_year_start_date: values.school_year_date_range[0].format('YYYY-MM-DD'),
         school_year_end_date: values.school_year_date_range[1].format('YYYY-MM-DD'),
         school_year_semester_id: values.school_year_semester_id,
-        school_year_admin_id: SecureStorage.getLocalItem("users_id")
+        school_year_admin_id: SecureStorage.getLocalItem("user_id")
       };
 
       const response = await axios.post(`${baseUrl}admin.php`, jsonData, {

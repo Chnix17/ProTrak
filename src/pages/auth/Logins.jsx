@@ -103,7 +103,7 @@ const Logins = () => {
         // Store in local storage
         SecureStorage.setLocalItem(field, userData[field].toString());
         // Store in session storage
-        sessionStorage.setItem(field, userData[field].toString());
+        SecureStorage.setItem(field, userData[field].toString());
       }
     });
   };

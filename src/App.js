@@ -71,6 +71,7 @@ const App = () => {
     useEffect(() => {
         const validPaths = [
             '/login',
+            '/dashboard',
             '/admin/dashboard',
             '/admin/academic',
             '/admin/users',
@@ -106,6 +107,7 @@ const App = () => {
                     <Layout>
                         <Routes>
                             <Route path="/" element={<Navigate to="/login" replace />} />
+                            <Route path="/dashboard" element={<Navigate to="/login" replace />} />
                             <Route path="/login" element={<Logins />} />
                             {/* <Route path="/register" element={<Register />} /> */}
                             
